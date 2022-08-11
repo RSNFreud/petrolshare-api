@@ -3,5 +3,4 @@ services:
   container:
     build: .
     restart: unless-stopped
-    ports:
-      - host
+    network_mode: host
