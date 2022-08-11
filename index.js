@@ -46,6 +46,7 @@ var argon2_1 = __importDefault(require("argon2"));
 var cors_1 = __importDefault(require("@fastify/cors"));
 var fastify = (0, fastify_1.default)({});
 fastify.register(cors_1.default, {});
+console.log(process.env.DB_HOST);
 var conn = mysql_1.default.createConnection({
     host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
 });
