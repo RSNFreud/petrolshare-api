@@ -62,7 +62,7 @@ fastify.post('/user/register', async (request: any, reply: any) => {
 const start = async () => {
     try {
         await fastify.listen({ port: 3434 })
-
+        console.log('Listening to traffic on 3434');
     } catch (err) {
         fastify.log.error(err)
         process.exit(1)
