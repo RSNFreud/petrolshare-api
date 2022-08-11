@@ -6,7 +6,7 @@ import cors from '@fastify/cors'
 
 const fastify: FastifyInstance = Fastify({})
 fastify.register(cors, {})
-console.log(process.env.DB_HOST);
+console.log('host', process.env.DB_HOST);
 
 const conn = mysql.createConnection({
     host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
