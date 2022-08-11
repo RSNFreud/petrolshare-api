@@ -1,5 +1,5 @@
 version: "3"
 services:
   container:
-    image: petrolshare
+    build: .
     restart: unless-stopped
