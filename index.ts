@@ -37,7 +37,7 @@ fastify.post('/user/login', async (request: any, reply: any) => {
     const results: Array<any> = await dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
     if (await argon2.verify(results[0].password, body["password"])) {
-        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage })
+        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress })
     } else {
         reply.code(400).send('Incorrect username or password.')
     }

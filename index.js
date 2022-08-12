@@ -83,7 +83,7 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
                 if (_a.sent()) {
-                    reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage });
+                    reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress });
                 }
                 else {
                     reply.code(400).send('Incorrect username or password.');
