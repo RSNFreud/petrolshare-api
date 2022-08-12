@@ -6,7 +6,6 @@ import cors from '@fastify/cors'
 
 const fastify: FastifyInstance = Fastify({})
 fastify.register(cors, {})
-console.log('host', process.env.DB_HOST);
 
 const conn = mysql.createConnection({
     host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
@@ -55,8 +54,19 @@ fastify.post('/user/register', async (request: any, reply: any) => {
     if ((results as Array<any>).length) return reply.code(400).send('This user exists already!')
     const password = argon2.hash(body['password'])
 
-    const res = await dbQuery('INSERT INTO users(groupID, fullName, emailAddress, password) VALUES (?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password])
-    console.log(res);
+    await dbQuery('INSERT INTO users(groupID, fullName, emailAddress, password) VALUES (?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password])
+})
+
+fastify.get('/data/mileage', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!('emailAddress' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT currentMileage from users WHERE emailAddress=?', [query['emailAddress']])
+    if (!results) return reply.code(400).send('This user does not exist!')
+    reply.send(results[0].currentMileage)
 
 })
 

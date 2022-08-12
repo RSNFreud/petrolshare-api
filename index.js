@@ -46,7 +46,6 @@ var argon2_1 = __importDefault(require("argon2"));
 var cors_1 = __importDefault(require("@fastify/cors"));
 var fastify = (0, fastify_1.default)({});
 fastify.register(cors_1.default, {});
-console.log('host', process.env.DB_HOST);
 var conn = mysql_1.default.createConnection({
     host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
 });
@@ -94,7 +93,7 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
     });
 }); });
 fastify.post('/user/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, password, res, _a, _b, _c;
+    var body, results, password, _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
@@ -114,8 +113,26 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
                 return [4 /*yield*/, password];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
             case 3:
-                res = _d.sent();
-                console.log(res);
+                _d.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get('/data/mileage', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!('emailAddress' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT currentMileage from users WHERE emailAddress=?', [query['emailAddress']])];
+            case 1:
+                results = _a.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                reply.send(results[0].currentMileage);
                 return [2 /*return*/];
         }
     });
