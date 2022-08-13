@@ -26,7 +26,16 @@ async function dbQuery(query: string, parameters?: Array<any>) {
     })
 }
 
-
+const generateCode = () => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for (var i = 0; i < 25; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            charactersLength));
+    }
+    return result
+}
 
 fastify.post('/user/login', async (request: any, reply: any) => {
     const { body } = request
@@ -37,7 +46,14 @@ fastify.post('/user/login', async (request: any, reply: any) => {
     const results: Array<any> = await dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
     if (await argon2.verify(results[0].password, body["password"])) {
-        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress })
+        console.log(results[0].authenticationKey);
+
+        const code = results[0].authenticationKey || generateCode()
+        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, verificationCode: code })
+
+        if (!results[0].authenticationKey) {
+            await dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
+        }
     } else {
         reply.code(400).send('Incorrect username or password.')
     }
@@ -46,7 +62,7 @@ fastify.post('/user/login', async (request: any, reply: any) => {
 fastify.post('/user/register', async (request: any, reply: any) => {
     const { body } = request
 
-    if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
+    if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body) || !('authenticationKey' in body)) {
         return reply.code(400).send('Missing required field!')
     }
 
@@ -60,14 +76,25 @@ fastify.post('/user/register', async (request: any, reply: any) => {
 fastify.get('/data/mileage', async (request: any, reply: any) => {
     const { query } = request
 
-    if (!('emailAddress' in query)) {
+    if (!('emailAddress' in query) || !('authenticationKey' in query)) {
         return reply.code(400).send('Missing required field!')
     }
 
     const results = await dbQuery('SELECT currentMileage from users WHERE emailAddress=?', [query['emailAddress']])
     if (!results) return reply.code(400).send('This user does not exist!')
     reply.send(results[0].currentMileage)
+})
 
+fastify.get('/data/reset', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!('emailAddress' in query) || !('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('UPDATE users SET currentMileage=0 WHERE emailAddress=?', [query['emailAddress']])
+    if (!results) return reply.code(400).send('This user does not exist!')
+    reply.send(results[0].currentMileage)
 })
 
 // Run the server!

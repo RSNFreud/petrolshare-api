@@ -66,8 +66,18 @@ function dbQuery(query, parameters) {
         });
     });
 }
+var generateCode = function () {
+    var result = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for (var i = 0; i < 25; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            charactersLength));
+    }
+    return result;
+};
 fastify.post('/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results;
+    var body, results, code;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -82,13 +92,20 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
                     return [2 /*return*/, reply.code(400).send('Incorrect username or password.')];
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
-                if (_a.sent()) {
-                    reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress });
-                }
-                else {
-                    reply.code(400).send('Incorrect username or password.');
-                }
-                return [2 /*return*/];
+                if (!_a.sent()) return [3 /*break*/, 5];
+                console.log(results[0].authenticationKey);
+                code = results[0].authenticationKey || generateCode();
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, verificationCode: code });
+                if (!!results[0].authenticationKey) return [3 /*break*/, 4];
+                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
+            case 3:
+                _a.sent();
+                _a.label = 4;
+            case 4: return [3 /*break*/, 6];
+            case 5:
+                reply.code(400).send('Incorrect username or password.');
+                _a.label = 6;
+            case 6: return [2 /*return*/];
         }
     });
 }); });
@@ -98,7 +115,7 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
         switch (_d.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
+                if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body) || !('authenticationKey' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])];
@@ -124,10 +141,29 @@ fastify.get('/data/mileage', function (request, reply) { return __awaiter(void 0
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!('emailAddress' in query)) {
+                if (!('emailAddress' in query) || !('authenticationKey' in query)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, dbQuery('SELECT currentMileage from users WHERE emailAddress=?', [query['emailAddress']])];
+            case 1:
+                results = _a.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                reply.send(results[0].currentMileage);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get('/data/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!('emailAddress' in query) || !('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=0 WHERE emailAddress=?', [query['emailAddress']])];
             case 1:
                 results = _a.sent();
                 if (!results)
