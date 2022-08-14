@@ -131,7 +131,7 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
         switch (_d.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body) || !('authenticationKey' in body)) {
+                if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])];
