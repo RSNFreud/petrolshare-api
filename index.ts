@@ -80,11 +80,11 @@ fastify.post('/user/register', async (request: any, reply: any) => {
 fastify.get('/data/mileage', async (request: any, reply: any) => {
     const { query } = request
 
-    if (!('emailAddress' in query) || !('authenticationKey' in query)) {
+    if (!('authenticationKey' in query)) {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT currentMileage from users WHERE emailAddress=?', [query['emailAddress']])
+    const results = await dbQuery('SELECT currentMileage from users WHERE authenticationKey=?', [query['authenticationKey']])
     if (!results) return reply.code(400).send('This user does not exist!')
     reply.send(results[0].currentMileage)
 })
@@ -92,12 +92,25 @@ fastify.get('/data/mileage', async (request: any, reply: any) => {
 fastify.post('/data/reset', async (request: any, reply: any) => {
     const { body } = request
 
-    if (!body || !('emailAddress' in body) || !('authenticationKey' in body)) {
+    if (!body || !('authenticationKey' in body)) {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('UPDATE users SET currentMileage=0 WHERE emailAddress=?', [body['emailAddress']])
+    const results = await dbQuery('UPDATE users SET currentMileage=0 WHERE authenticationKey=?', [body['authenticationKey']])
     if (!results) return reply.code(400).send('This user does not exist!')
+    reply.code(200)
+})
+
+fastify.post('/data/add', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!body || !('distance' in body) || !('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('UPDATE users SET currentMileage=currentMileage+? WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])
+    if (!results) return reply.code(400).send('This user does not exist!')
+
     reply.code(200)
 })
 

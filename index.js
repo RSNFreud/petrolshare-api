@@ -161,10 +161,10 @@ fastify.get('/data/mileage', function (request, reply) { return __awaiter(void 0
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!('emailAddress' in query) || !('authenticationKey' in query)) {
+                if (!('authenticationKey' in query)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('SELECT currentMileage from users WHERE emailAddress=?', [query['emailAddress']])];
+                return [4 /*yield*/, dbQuery('SELECT currentMileage from users WHERE authenticationKey=?', [query['authenticationKey']])];
             case 1:
                 results = _a.sent();
                 if (!results)
@@ -180,10 +180,29 @@ fastify.post('/data/reset', function (request, reply) { return __awaiter(void 0,
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('emailAddress' in body) || !('authenticationKey' in body)) {
+                if (!body || !('authenticationKey' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=0 WHERE emailAddress=?', [body['emailAddress']])];
+                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=0 WHERE authenticationKey=?', [body['authenticationKey']])];
+            case 1:
+                results = _a.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/data/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('distance' in body) || !('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=currentMileage+? WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])];
             case 1:
                 results = _a.sent();
                 if (!results)
