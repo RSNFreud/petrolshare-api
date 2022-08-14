@@ -176,7 +176,7 @@ fastify.post('/data/reset', function (request, reply) { return __awaiter(void 0,
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('authenticationKey' in body)) {
+                if (!body || !('emailAddress' in body) || !('authenticationKey' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=0 WHERE emailAddress=?', [body['emailAddress']])];
@@ -184,7 +184,7 @@ fastify.post('/data/reset', function (request, reply) { return __awaiter(void 0,
                 results = _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                reply.send(results[0].currentMileage);
+                reply.code(200);
                 return [2 /*return*/];
         }
     });
