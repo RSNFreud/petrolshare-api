@@ -126,12 +126,12 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
     });
 }); });
 fastify.post('/user/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, password, _a, _b, _c;
+    var body, results, password, code, _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body) || !('authenticationKey' in body)) {
+                if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])];
@@ -140,13 +140,17 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
                 if (results.length)
                     return [2 /*return*/, reply.code(400).send('This user exists already!')];
                 password = argon2_1.default.hash(body['password']);
+                return [4 /*yield*/, generateCode()];
+            case 2:
+                code = _d.sent();
                 _a = dbQuery;
-                _b = ['INSERT INTO users(groupID, fullName, emailAddress, password) VALUES (?,?,?,?)'];
+                _b = ['INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey) VALUES (?,?,?,?,?)'];
                 _c = [body['groupID'], body['fullName'], body['emailAddress']];
                 return [4 /*yield*/, password];
-            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
-            case 3:
+            case 3: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent(), code])]))];
+            case 4:
                 _d.sent();
+                reply.send(code);
                 return [2 /*return*/];
         }
     });

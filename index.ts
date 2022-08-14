@@ -62,7 +62,7 @@ fastify.post('/user/login', async (request: any, reply: any) => {
 fastify.post('/user/register', async (request: any, reply: any) => {
     const { body } = request
 
-    if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body) || !('authenticationKey' in body)) {
+    if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
         return reply.code(400).send('Missing required field!')
     }
 
@@ -70,7 +70,11 @@ fastify.post('/user/register', async (request: any, reply: any) => {
     if ((results as Array<any>).length) return reply.code(400).send('This user exists already!')
     const password = argon2.hash(body['password'])
 
-    await dbQuery('INSERT INTO users(groupID, fullName, emailAddress, password) VALUES (?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password])
+    const code = await generateCode();
+
+    await dbQuery('INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey) VALUES (?,?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password, code])
+
+    reply.send(code)
 })
 
 fastify.get('/data/mileage', async (request: any, reply: any) => {
