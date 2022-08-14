@@ -66,20 +66,30 @@ function dbQuery(query, parameters) {
         });
     });
 }
-var generateCode = function () {
-    var result = '';
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for (var i = 0; i < 25; i++) {
-        result += characters.charAt(Math.floor(Math.random() *
-            charactersLength));
-    }
-    return result;
-};
-fastify.post('/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, code;
+var generateCode = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var result, characters, charactersLength, i;
     return __generator(this, function (_a) {
         switch (_a.label) {
+            case 0:
+                result = '';
+                characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                charactersLength = characters.length;
+                for (i = 0; i < 25; i++) {
+                    result += characters.charAt(Math.floor(Math.random() *
+                        charactersLength));
+                }
+                return [4 /*yield*/, dbQuery('SELECT * from users where authenticationKey=?', [result])];
+            case 1:
+                if ((_a.sent()).length)
+                    return [2 /*return*/, generateCode()];
+                return [2 /*return*/, result];
+        }
+    });
+}); };
+fastify.post('/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, results, code, _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 body = request.body;
                 if (!('emailAddress' in body) || !('password' in body)) {
@@ -87,25 +97,31 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
                 }
                 return [4 /*yield*/, dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])];
             case 1:
-                results = _a.sent();
+                results = _b.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send('Incorrect username or password.')];
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
-                if (!_a.sent()) return [3 /*break*/, 5];
-                console.log(results[0].authenticationKey);
-                code = results[0].authenticationKey || generateCode();
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, verificationCode: code });
-                if (!!results[0].authenticationKey) return [3 /*break*/, 4];
-                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
+                if (!_b.sent()) return [3 /*break*/, 7];
+                _a = results[0].authenticationKey;
+                if (_a) return [3 /*break*/, 4];
+                return [4 /*yield*/, generateCode()];
             case 3:
-                _a.sent();
-                _a.label = 4;
-            case 4: return [3 /*break*/, 6];
+                _a = (_b.sent());
+                _b.label = 4;
+            case 4:
+                code = _a;
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, verificationCode: code });
+                if (!!results[0].authenticationKey) return [3 /*break*/, 6];
+                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 5:
+                _b.sent();
+                _b.label = 6;
+            case 6: return [3 /*break*/, 8];
+            case 7:
                 reply.code(400).send('Incorrect username or password.');
-                _a.label = 6;
-            case 6: return [2 /*return*/];
+                _b.label = 8;
+            case 8: return [2 /*return*/];
         }
     });
 }); });

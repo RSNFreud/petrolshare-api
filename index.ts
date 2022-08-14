@@ -26,7 +26,7 @@ async function dbQuery(query: string, parameters?: Array<any>) {
     })
 }
 
-const generateCode = () => {
+const generateCode: any = async () => {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
@@ -34,6 +34,8 @@ const generateCode = () => {
         result += characters.charAt(Math.floor(Math.random() *
             charactersLength));
     }
+
+    if ((await dbQuery('SELECT * from users where authenticationKey=?', [result])).length) return generateCode()
     return result
 }
 
@@ -46,9 +48,7 @@ fastify.post('/user/login', async (request: any, reply: any) => {
     const results: Array<any> = await dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
     if (await argon2.verify(results[0].password, body["password"])) {
-        console.log(results[0].authenticationKey);
-
-        const code = results[0].authenticationKey || generateCode()
+        const code = results[0].authenticationKey || await generateCode()
         reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, verificationCode: code })
 
         if (!results[0].authenticationKey) {
