@@ -49,7 +49,7 @@ fastify.post('/user/login', async (request: any, reply: any) => {
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
     if (await argon2.verify(results[0].password, body["password"])) {
         const code = results[0].authenticationKey || await generateCode()
-        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, authenticationKey: code })
+        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID })
 
         if (!results[0].authenticationKey) {
             await dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
@@ -111,6 +111,86 @@ fastify.post('/data/add', async (request: any, reply: any) => {
     const results = await dbQuery('UPDATE users SET currentMileage=currentMileage+? WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])
     if (!results) return reply.code(400).send('This user does not exist!')
 
+    reply.code(200)
+})
+
+const retrieveID = async (authenticationKey: string) => {
+    return await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
+}
+
+fastify.get('/preset/get', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!query || !('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    let userID = await retrieveID(query['authenticationKey'])
+
+    if (!userID.length) {
+        return reply.code(400).send('This user does not exist!')
+    }
+
+    userID = userID[0].userID
+
+    const results = await dbQuery('SELECT presetName, distance, presetID FROM presets WHERE userID=?', [userID])
+    if (!results) return reply.code(400).send('There are no presets!')
+
+    reply.send(results[0])
+})
+
+fastify.post('/preset/add', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!body || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    let userID = await retrieveID(body['authenticationKey'])
+
+    if (!userID.length) {
+        return reply.code(400).send('This user does not exist!')
+    }
+
+    userID = userID[0].userID
+
+    await dbQuery('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])
+    reply.code(200)
+})
+
+fastify.post('/preset/edit', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!body || !('presetID' in body) || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    let userID = await retrieveID(body['authenticationKey'])
+
+    if (!userID.length) {
+        return reply.code(400).send('This user does not exist!')
+    }
+
+    userID = userID[0].userID
+
+    await dbQuery('UPDATE presets SET presetName=?, distance=? WHERE presetID=?', [body['presetName'], body['distance'], body['presetID']])
+    reply.code(200)
+})
+
+fastify.post('/preset/delete', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!body || !('presetID' in body) || !('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userID = await retrieveID(body['authenticationKey'])
+
+    if (!userID.length) {
+        return reply.code(400).send('This user does not exist!')
+    }
+
+
+    await dbQuery('DELETE FROM presets WHERE presetID=?', [body['presetID']])
     reply.code(200)
 })
 

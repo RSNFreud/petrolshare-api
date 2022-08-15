@@ -111,7 +111,7 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
                 _b.label = 4;
             case 4:
                 code = _a;
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, authenticationKey: code });
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID });
                 if (!!results[0].authenticationKey) return [3 /*break*/, 6];
                 return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 5:
@@ -207,6 +207,111 @@ fastify.post('/data/add', function (request, reply) { return __awaiter(void 0, v
                 results = _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
+var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])];
+            case 1: return [2 /*return*/, _a.sent()];
+        }
+    });
+}); };
+fastify.get('/preset/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, userID, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!query || !('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+            case 1:
+                userID = _a.sent();
+                if (!userID.length) {
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                }
+                userID = userID[0].userID;
+                return [4 /*yield*/, dbQuery('SELECT presetName, distance, presetID FROM presets WHERE userID=?', [userID])];
+            case 2:
+                results = _a.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('There are no presets!')];
+                reply.send(results[0]);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/preset/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userID;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = _a.sent();
+                if (!userID.length) {
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                }
+                userID = userID[0].userID;
+                return [4 /*yield*/, dbQuery('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])];
+            case 2:
+                _a.sent();
+                reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/preset/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userID;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('presetID' in body) || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = _a.sent();
+                if (!userID.length) {
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                }
+                userID = userID[0].userID;
+                return [4 /*yield*/, dbQuery('UPDATE presets SET presetName=?, distance=? WHERE presetID=?', [body['presetName'], body['distance'], body['presetID']])];
+            case 2:
+                _a.sent();
+                reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/preset/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userID;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('presetID' in body) || !('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = _a.sent();
+                if (!userID.length) {
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                }
+                return [4 /*yield*/, dbQuery('DELETE FROM presets WHERE presetID=?', [body['presetID']])];
+            case 2:
+                _a.sent();
                 reply.code(200);
                 return [2 /*return*/];
         }
