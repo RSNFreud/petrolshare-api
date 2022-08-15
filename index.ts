@@ -135,7 +135,7 @@ fastify.get('/preset/get', async (request: any, reply: any) => {
     const results = await dbQuery('SELECT presetName, distance, presetID FROM presets WHERE userID=?', [userID])
     if (!results) return reply.code(400).send('There are no presets!')
 
-    reply.send(results[0])
+    reply.send(results)
 })
 
 fastify.post('/preset/add', async (request: any, reply: any) => {

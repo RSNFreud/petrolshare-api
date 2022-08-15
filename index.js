@@ -241,7 +241,7 @@ fastify.get('/preset/get', function (request, reply) { return __awaiter(void 0, 
                 results = _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('There are no presets!')];
-                reply.send(results[0]);
+                reply.send(results);
                 return [2 /*return*/];
         }
     });
