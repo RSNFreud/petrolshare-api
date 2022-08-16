@@ -155,7 +155,7 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
         }
     });
 }); });
-fastify.get('/data/mileage', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -174,7 +174,7 @@ fastify.get('/data/mileage', function (request, reply) { return __awaiter(void 0
         }
     });
 }); });
-fastify.post('/data/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/distance/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -193,8 +193,8 @@ fastify.post('/data/reset', function (request, reply) { return __awaiter(void 0,
         }
     });
 }); });
-fastify.post('/data/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results;
+fastify.post('/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, results, log, err_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -207,11 +207,28 @@ fastify.post('/data/add', function (request, reply) { return __awaiter(void 0, v
                 results = _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                return [4 /*yield*/, dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [body['authenticationKey']])];
+            case 2:
+                log = (_a.sent())[0];
+                _a.label = 3;
+            case 3:
+                _a.trys.push([3, 5, , 6]);
+                return [4 /*yield*/, dbQuery('INSERT INTO logs(userID, distance, date, groupID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID])];
+            case 4:
+                _a.sent();
+                return [3 /*break*/, 6];
+            case 5:
+                err_1 = _a.sent();
+                console.log(err_1);
+                return [3 /*break*/, 6];
+            case 6:
                 reply.code(200);
                 return [2 /*return*/];
         }
     });
 }); });
+// On fuel - create new session
+// should it reset on reset distance too?
 var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -319,7 +336,7 @@ fastify.post('/preset/delete', function (request, reply) { return __awaiter(void
 }); });
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var err_1;
+    var err_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -330,8 +347,8 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.log('Listening to traffic on 3434');
                 return [3 /*break*/, 3];
             case 2:
-                err_1 = _a.sent();
-                fastify.log.error(err_1);
+                err_2 = _a.sent();
+                fastify.log.error(err_2);
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];

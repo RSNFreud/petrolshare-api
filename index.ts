@@ -77,7 +77,7 @@ fastify.post('/user/register', async (request: any, reply: any) => {
     reply.send(code)
 })
 
-fastify.get('/data/mileage', async (request: any, reply: any) => {
+fastify.get('/distance/get', async (request: any, reply: any) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -89,7 +89,7 @@ fastify.get('/data/mileage', async (request: any, reply: any) => {
     reply.send(results[0].currentMileage)
 })
 
-fastify.post('/data/reset', async (request: any, reply: any) => {
+fastify.post('/distance/reset', async (request: any, reply: any) => {
     const { body } = request
 
     if (!body || !('authenticationKey' in body)) {
@@ -101,7 +101,7 @@ fastify.post('/data/reset', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-fastify.post('/data/add', async (request: any, reply: any) => {
+fastify.post('/distance/add', async (request: any, reply: any) => {
     const { body } = request
 
     if (!body || !('distance' in body) || !('authenticationKey' in body)) {
@@ -111,8 +111,18 @@ fastify.post('/data/add', async (request: any, reply: any) => {
     const results = await dbQuery('UPDATE users SET currentMileage=currentMileage+? WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])
     if (!results) return reply.code(400).send('This user does not exist!')
 
+    const log = (await dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [body['authenticationKey']]))[0]
+    try {
+        await dbQuery('INSERT INTO logs(userID, distance, date, groupID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID])
+    } catch (err) {
+        console.log(err);
+    }
+
     reply.code(200)
 })
+
+// On fuel - create new session
+// should it reset on reset distance too?
 
 const retrieveID = async (authenticationKey: string) => {
     return await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
