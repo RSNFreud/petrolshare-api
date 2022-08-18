@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -257,26 +246,20 @@ fastify.post('/distance/add', function (request, reply) { return __awaiter(void 
     });
 }); });
 fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, sessionResults, _a, _b, results, _c, _d, flat;
-    return __generator(this, function (_e) {
-        switch (_e.label) {
+    var query, results, _a, _b, flat;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
             case 0:
                 query = request.query;
                 if (!('authenticationKey' in query)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 _a = dbQuery;
-                _b = ['SELECT groupID, sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID=?'];
+                _b = ['SELECT l.groupID, l.distance, l.date, l.logID, s.sessionStart, s.sessionEnd, s.sessionActive, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) WHERE l.groupID = ?'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
-            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_e.sent()]]))];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
             case 2:
-                sessionResults = _e.sent();
-                _c = dbQuery;
-                _d = ['SELECT distance, date, logID, sessionID FROM logs WHERE groupID=?'];
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
-            case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
-            case 4:
-                results = _e.sent();
+                results = _c.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
                 flat = {};
@@ -284,13 +267,11 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                     if (!flat[e.sessionID])
                         flat[e.sessionID] = { logs: [] };
                     flat[e.sessionID] = {
+                        sessionActive: e.sessionActive,
+                        sessionStart: e.sessionStart,
+                        sessionEnd: e.sessionEnd,
                         logs: __spreadArray(__spreadArray([], flat[e.sessionID].logs, true), [{ distance: e.distance, date: e.date, logID: e.logID }], false)
                     };
-                });
-                sessionResults.map(function (e) {
-                    if (!flat[e.sessionID])
-                        flat[e.sessionID] = { logs: [] };
-                    flat[e.sessionID] = __assign({ sessionActive: e.sessionActive, sessionStart: e.sessionStart, sessionEnd: e.sessionEnd }, flat[e.sessionID]);
                 });
                 reply.send(flat);
                 return [2 /*return*/];

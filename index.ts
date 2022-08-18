@@ -133,9 +133,7 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const sessionResults = await dbQuery('SELECT groupID, sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID=?', [await retrieveGroupID(query['authenticationKey'])])
-
-    const results = await dbQuery('SELECT distance, date, logID, sessionID FROM logs WHERE groupID=?', [await retrieveGroupID(query['authenticationKey'])])
+    const results = await dbQuery('SELECT l.groupID, l.distance, l.date, l.logID, s.sessionStart, s.sessionEnd, s.sessionActive, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) WHERE l.groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
     if (!results) return reply.code(400).send('There are no logs to be found')
 
     let flat: any = {}
@@ -144,19 +142,10 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
         if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
 
         flat[e.sessionID] = {
-            logs: [...flat[e.sessionID].logs, { distance: e.distance, date: e.date, logID: e.logID }]
-        }
-
-    })
-
-    sessionResults.map(e => {
-        if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
-
-        flat[e.sessionID] = {
             sessionActive: e.sessionActive,
             sessionStart: e.sessionStart,
             sessionEnd: e.sessionEnd,
-            ...flat[e.sessionID]
+            logs: [...flat[e.sessionID].logs, { distance: e.distance, date: e.date, logID: e.logID }]
         }
 
     })
