@@ -278,6 +278,28 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
         }
     });
 }); });
+fastify.get('/summary/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results, _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                query = request.query;
+                if (!('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                _a = dbQuery;
+                _b = ['SELECT fullName, currentMileage FROM users WHERE groupID = ?'];
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+            case 2:
+                results = _c.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('There are no users to be found')];
+                reply.send(results);
+                return [2 /*return*/];
+        }
+    });
+}); });
 var retrieveGroupID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {

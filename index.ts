@@ -153,6 +153,19 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
     reply.send(flat)
 })
 
+fastify.get('/summary/get', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT fullName, currentMileage FROM users WHERE groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
+    if (!results) return reply.code(400).send('There are no users to be found')
+
+    reply.send(results)
+})
+
 
 const retrieveGroupID = async (authenticationKey: string) => {
     return (await dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey]))[0].groupID
