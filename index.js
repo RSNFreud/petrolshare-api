@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -34,6 +45,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
+};
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -175,7 +195,7 @@ fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0
     });
 }); });
 fastify.post('/distance/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results;
+    var body, results, groupID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -188,13 +208,19 @@ fastify.post('/distance/reset', function (request, reply) { return __awaiter(voi
                 results = _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 2:
+                groupID = _a.sent();
+                return [4 /*yield*/, dbQuery('UPDATE sessions SET sessionActive=false WHERE groupID=?', [groupID])];
+            case 3:
+                _a.sent();
                 reply.code(200);
                 return [2 /*return*/];
         }
     });
 }); });
 fastify.post('/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, log, err_1;
+    var body, results, log, sessionID, err_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -210,25 +236,91 @@ fastify.post('/distance/add', function (request, reply) { return __awaiter(void 
                 return [4 /*yield*/, dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [body['authenticationKey']])];
             case 2:
                 log = (_a.sent())[0];
-                _a.label = 3;
+                return [4 /*yield*/, retrieveSessionID(log.groupID)];
             case 3:
-                _a.trys.push([3, 5, , 6]);
-                return [4 /*yield*/, dbQuery('INSERT INTO logs(userID, distance, date, groupID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID])];
+                sessionID = _a.sent();
+                _a.label = 4;
             case 4:
-                _a.sent();
-                return [3 /*break*/, 6];
+                _a.trys.push([4, 6, , 7]);
+                return [4 /*yield*/, dbQuery('INSERT INTO logs(userID, distance, date, groupID, sessionID) VALUES(?,?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID, sessionID])];
             case 5:
+                _a.sent();
+                return [3 /*break*/, 7];
+            case 6:
                 err_1 = _a.sent();
                 console.log(err_1);
-                return [3 /*break*/, 6];
-            case 6:
+                return [3 /*break*/, 7];
+            case 7:
                 reply.code(200);
                 return [2 /*return*/];
         }
     });
 }); });
-// On fuel - create new session
-// should it reset on reset distance too?
+fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, sessionResults, _a, _b, results, _c, _d, flat;
+    return __generator(this, function (_e) {
+        switch (_e.label) {
+            case 0:
+                query = request.query;
+                if (!('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                _a = dbQuery;
+                _b = ['SELECT groupID, sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID=?'];
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_e.sent()]]))];
+            case 2:
+                sessionResults = _e.sent();
+                _c = dbQuery;
+                _d = ['SELECT distance, date, logID, sessionID FROM logs WHERE groupID=?'];
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
+            case 4:
+                results = _e.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
+                flat = {};
+                results.map(function (e) {
+                    if (!flat[e.sessionID])
+                        flat[e.sessionID] = { logs: [] };
+                    flat[e.sessionID] = {
+                        logs: __spreadArray(__spreadArray([], flat[e.sessionID].logs, true), [{ distance: e.distance, date: e.date, logID: e.logID }], false)
+                    };
+                });
+                sessionResults.map(function (e) {
+                    if (!flat[e.sessionID])
+                        flat[e.sessionID] = { logs: [] };
+                    flat[e.sessionID] = __assign({ sessionActive: e.sessionActive, sessionStart: e.sessionStart, sessionEnd: e.sessionEnd }, flat[e.sessionID]);
+                });
+                reply.send(flat);
+                return [2 /*return*/];
+        }
+    });
+}); });
+var retrieveGroupID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey])];
+            case 1: return [2 /*return*/, (_a.sent())[0].groupID];
+        }
+    });
+}); };
+var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, void 0, function () {
+    var res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])];
+            case 1:
+                res = _a.sent();
+                if (!!res.length) return [3 /*break*/, 3];
+                return [4 /*yield*/, dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])];
+            case 2:
+                res = _a.sent();
+                return [2 /*return*/, res.insertId];
+            case 3: return [2 /*return*/, res[0].sessionID];
+        }
+    });
+}); };
 var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {

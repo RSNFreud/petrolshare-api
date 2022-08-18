@@ -98,6 +98,10 @@ fastify.post('/distance/reset', async (request: any, reply: any) => {
 
     const results = await dbQuery('UPDATE users SET currentMileage=0 WHERE authenticationKey=?', [body['authenticationKey']])
     if (!results) return reply.code(400).send('This user does not exist!')
+
+    const groupID = await retrieveGroupID(body['authenticationKey'])
+    await dbQuery('UPDATE sessions SET sessionActive=false WHERE groupID=?', [groupID])
+
     reply.code(200)
 })
 
@@ -110,10 +114,11 @@ fastify.post('/distance/add', async (request: any, reply: any) => {
 
     const results = await dbQuery('UPDATE users SET currentMileage=currentMileage+? WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])
     if (!results) return reply.code(400).send('This user does not exist!')
-
     const log = (await dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [body['authenticationKey']]))[0]
+    const sessionID = await retrieveSessionID(log.groupID)
+
     try {
-        await dbQuery('INSERT INTO logs(userID, distance, date, groupID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID])
+        await dbQuery('INSERT INTO logs(userID, distance, date, groupID, sessionID) VALUES(?,?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID, sessionID])
     } catch (err) {
         console.log(err);
     }
@@ -121,8 +126,57 @@ fastify.post('/distance/add', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-// On fuel - create new session
-// should it reset on reset distance too?
+fastify.get('/logs/get', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const sessionResults = await dbQuery('SELECT groupID, sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID=?', [await retrieveGroupID(query['authenticationKey'])])
+
+    const results = await dbQuery('SELECT distance, date, logID, sessionID FROM logs WHERE groupID=?', [await retrieveGroupID(query['authenticationKey'])])
+    if (!results) return reply.code(400).send('There are no logs to be found')
+
+    let flat: any = {}
+
+    results.map(e => {
+        if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
+
+        flat[e.sessionID] = {
+            logs: [...flat[e.sessionID].logs, { distance: e.distance, date: e.date, logID: e.logID }]
+        }
+
+    })
+
+    sessionResults.map(e => {
+        if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
+
+        flat[e.sessionID] = {
+            sessionActive: e.sessionActive,
+            sessionStart: e.sessionStart,
+            sessionEnd: e.sessionEnd,
+            ...flat[e.sessionID]
+        }
+
+    })
+
+    reply.send(flat)
+})
+
+
+const retrieveGroupID = async (authenticationKey: string) => {
+    return (await dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey]))[0].groupID
+}
+
+const retrieveSessionID = async (groupID: string) => {
+    let res: any = await dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])
+    if (!res.length) {
+        res = await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])
+        return res.insertId
+    }
+    return res[0].sessionID
+}
 
 const retrieveID = async (authenticationKey: string) => {
     return await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
