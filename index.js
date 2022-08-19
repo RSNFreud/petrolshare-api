@@ -255,7 +255,7 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 _a = dbQuery;
-                _b = ['SELECT l.groupID, l.distance, l.date, l.logID, s.sessionStart, s.sessionEnd, s.sessionActive, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) WHERE l.groupID = ?'];
+                _b = ['SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionStart, s.sessionEnd, s.sessionActive, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ?'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
             case 2:
@@ -270,7 +270,7 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                         sessionActive: e.sessionActive,
                         sessionStart: e.sessionStart,
                         sessionEnd: e.sessionEnd,
-                        logs: __spreadArray(__spreadArray([], flat[e.sessionID].logs, true), [{ distance: e.distance, date: e.date, logID: e.logID }], false)
+                        logs: __spreadArray(__spreadArray([], flat[e.sessionID].logs, true), [{ fullName: e.fullName, distance: e.distance, date: e.date, logID: e.logID }], false)
                     };
                 });
                 reply.send(flat);
