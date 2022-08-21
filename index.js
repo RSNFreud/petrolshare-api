@@ -200,7 +200,7 @@ fastify.post('/distance/reset', function (request, reply) { return __awaiter(voi
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 2:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('UPDATE sessions SET sessionActive=false WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [groupID, Date.now()])];
             case 3:
                 _a.sent();
                 reply.code(200);

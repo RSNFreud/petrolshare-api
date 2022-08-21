@@ -100,7 +100,7 @@ fastify.post('/distance/reset', async (request: any, reply: any) => {
     if (!results) return reply.code(400).send('This user does not exist!')
 
     const groupID = await retrieveGroupID(body['authenticationKey'])
-    await dbQuery('UPDATE sessions SET sessionActive=false WHERE groupID=?', [groupID])
+    await dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [groupID, Date.now()])
 
     reply.code(200)
 })
