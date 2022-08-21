@@ -176,7 +176,7 @@ fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
                 userID = (_a.sent())[0].userID;
-                return [4 /*yield*/, dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (groupID) WHERE userID=? AND sessionActive=true', [userID])];
+                return [4 /*yield*/, dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])];
             case 2:
                 results = _a.sent();
                 if (!results)
