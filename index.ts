@@ -86,7 +86,7 @@ fastify.get('/distance/get', async (request: any, reply: any) => {
 
     const userID = (await retrieveID(query['authenticationKey']))[0].userID
 
-    const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (groupID) WHERE userID=?', [userID])
+    const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (groupID) WHERE userID=? AND sessionActive=true', [userID])
 
     if (!results) return reply.send(0)
     let total = 0;
