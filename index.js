@@ -330,6 +330,35 @@ fastify.post('/logs/delete', function (request, reply) { return __awaiter(void 0
         }
     });
 }); });
+fastify.post('/logs/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userID, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('logID' in body) || !('distance' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = (_a.sent())[0].userID;
+                return [4 /*yield*/, dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])];
+            case 2:
+                results = _a.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send('No log found with that ID')];
+                if (results[0].userID !== userID) {
+                    return [2 /*return*/, reply.code(400).send('Insufficient permissions!')];
+                }
+                return [4 /*yield*/, dbQuery('UPDATE logs SET distance=? WHERE logID=?', [body["distance"], body["logID"]])];
+            case 3:
+                _a.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.get('/summary/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results, _a, _b;
     return __generator(this, function (_c) {

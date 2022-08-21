@@ -190,6 +190,27 @@ fastify.post('/logs/delete', async (request: any, reply: any) => {
 
 })
 
+fastify.post('/logs/edit', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('logID' in body) || !('distance' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userID = (await retrieveID(body['authenticationKey']))[0].userID
+    const results = await dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])
+
+    if (!results.length) return reply.code(400).send('No log found with that ID')
+
+    if (results[0].userID !== userID) {
+        return reply.code(400).send('Insufficient permissions!')
+    }
+
+    await dbQuery('UPDATE logs SET distance=? WHERE logID=?', [body["distance"], body["logID"]])
+
+    if (!results) return reply.code(400).send('There are no logs to be found')
+})
+
 fastify.get('/summary/get', async (request: any, reply: any) => {
     const { query } = request
 
