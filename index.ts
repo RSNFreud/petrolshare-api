@@ -49,7 +49,7 @@ fastify.post('/user/login', async (request: any, reply: any) => {
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
     if (await argon2.verify(results[0].password, body["password"])) {
         const code = results[0].authenticationKey || await generateCode()
-        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID })
+        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID })
 
         if (!results[0].authenticationKey) {
             await dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
@@ -84,9 +84,16 @@ fastify.get('/distance/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT currentMileage from users WHERE authenticationKey=?', [query['authenticationKey']])
-    if (!results) return reply.code(400).send('This user does not exist!')
-    reply.send(results[0].currentMileage)
+    const userID = (await retrieveID(query['authenticationKey']))[0].userID
+
+    const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (groupID) WHERE userID=?', [userID])
+
+    if (!results) return reply.send(0)
+    let total = 0;
+    results.map(({ distance }) => {
+        total += distance
+    })
+    reply.send(Math.round(total * 10) / 10)
 })
 
 fastify.post('/distance/reset', async (request: any, reply: any) => {
@@ -95,9 +102,6 @@ fastify.post('/distance/reset', async (request: any, reply: any) => {
     if (!body || !('authenticationKey' in body)) {
         return reply.code(400).send('Missing required field!')
     }
-
-    const results = await dbQuery('UPDATE users SET currentMileage=0 WHERE authenticationKey=?', [body['authenticationKey']])
-    if (!results) return reply.code(400).send('This user does not exist!')
 
     const groupID = await retrieveGroupID(body['authenticationKey'])
     await dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [Date.now(), groupID])
@@ -134,7 +138,7 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionStart, s.sessionEnd, s.sessionActive, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
+    let results = await dbQuery('SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionStart, s.sessionEnd, s.sessionActive, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
     if (!results.length) return reply.code(400).send('There are no logs to be found')
 
     let flat: any = {}

@@ -120,7 +120,7 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
                 _b.label = 4;
             case 4:
                 code = _a;
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, currentMileage: results[0].currentMileage, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID });
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID });
                 if (!!results[0].authenticationKey) return [3 /*break*/, 6];
                 return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 5:
@@ -165,7 +165,7 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
     });
 }); });
 fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, results;
+    var query, userID, results, total;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -173,18 +173,26 @@ fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0
                 if (!('authenticationKey' in query)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('SELECT currentMileage from users WHERE authenticationKey=?', [query['authenticationKey']])];
+                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
+                userID = (_a.sent())[0].userID;
+                return [4 /*yield*/, dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (groupID) WHERE userID=?', [userID])];
+            case 2:
                 results = _a.sent();
                 if (!results)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                reply.send(results[0].currentMileage);
+                    return [2 /*return*/, reply.send(0)];
+                total = 0;
+                results.map(function (_a) {
+                    var distance = _a.distance;
+                    total += distance;
+                });
+                reply.send(Math.round(total * 10) / 10);
                 return [2 /*return*/];
         }
     });
 }); });
 fastify.post('/distance/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, groupID;
+    var body, groupID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -192,16 +200,11 @@ fastify.post('/distance/reset', function (request, reply) { return __awaiter(voi
                 if (!body || !('authenticationKey' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=0 WHERE authenticationKey=?', [body['authenticationKey']])];
-            case 1:
-                results = _a.sent();
-                if (!results)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
-            case 2:
+            case 1:
                 groupID = _a.sent();
                 return [4 /*yield*/, dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [Date.now(), groupID])];
-            case 3:
+            case 2:
                 _a.sent();
                 retrieveSessionID(groupID);
                 reply.code(200);
