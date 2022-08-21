@@ -173,10 +173,6 @@ fastify.post('/logs/delete', async (request: any, reply: any) => {
         return reply.code(400).send('Insufficient permissions!')
     }
 
-    if (results[0].sessionActive) {
-        await dbQuery('UPDATE users SET currentMileage=currentMileage-? WHERE userID=?', [results[0].distance, userID]);
-    }
-
     await dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])
 
     if (!results) return reply.code(400).send('There are no logs to be found')

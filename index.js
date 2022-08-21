@@ -301,13 +301,8 @@ fastify.post('/logs/delete', function (request, reply) { return __awaiter(void 0
                 if (results[0].userID !== userID) {
                     return [2 /*return*/, reply.code(400).send('Insufficient permissions!')];
                 }
-                if (!results[0].sessionActive) return [3 /*break*/, 4];
-                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=currentMileage-? WHERE userID=?', [results[0].distance, userID])];
+                return [4 /*yield*/, dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])];
             case 3:
-                _a.sent();
-                _a.label = 4;
-            case 4: return [4 /*yield*/, dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])];
-            case 5:
                 _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
