@@ -100,7 +100,8 @@ fastify.post('/distance/reset', async (request: any, reply: any) => {
     if (!results) return reply.code(400).send('This user does not exist!')
 
     const groupID = await retrieveGroupID(body['authenticationKey'])
-    await dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [groupID, Date.now()])
+    await dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [Date.now(), groupID])
+    retrieveSessionID(groupID)
 
     reply.code(200)
 })
@@ -133,9 +134,8 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-
     const results = await dbQuery('SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionStart, s.sessionEnd, s.sessionActive, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
-    if (!results) return reply.code(400).send('There are no logs to be found')
+    if (!results.length) return reply.code(400).send('There are no logs to be found')
 
     let flat: any = {}
 
@@ -152,6 +152,31 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
     })
 
     reply.send(flat)
+})
+
+fastify.post('/logs/delete', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('logID' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userID = (await retrieveID(body['authenticationKey']))[0].userID
+    const results = await dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])
+
+    if (results[0].userID !== userID) {
+        return reply.code(400).send('Insufficient permissions!')
+    }
+
+    if (results[0].sessionActive) {
+        await dbQuery('UPDATE users SET currentMileage=currentMileage-? WHERE userID=?', [results[0].distance, userID]);
+    }
+
+    await dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])
+
+    if (!results) return reply.code(400).send('There are no logs to be found')
+
+
 })
 
 fastify.get('/summary/get', async (request: any, reply: any) => {

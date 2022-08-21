@@ -200,9 +200,10 @@ fastify.post('/distance/reset', function (request, reply) { return __awaiter(voi
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 2:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [groupID, Date.now()])];
+                return [4 /*yield*/, dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [Date.now(), groupID])];
             case 3:
                 _a.sent();
+                retrieveSessionID(groupID);
                 reply.code(200);
                 return [2 /*return*/];
         }
@@ -260,7 +261,7 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
             case 2:
                 results = _c.sent();
-                if (!results)
+                if (!results.length)
                     return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
                 flat = {};
                 results.map(function (e) {
@@ -274,6 +275,38 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                     };
                 });
                 reply.send(flat);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/logs/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userID, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('logID' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = (_a.sent())[0].userID;
+                return [4 /*yield*/, dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])];
+            case 2:
+                results = _a.sent();
+                if (results[0].userID !== userID) {
+                    return [2 /*return*/, reply.code(400).send('Insufficient permissions!')];
+                }
+                if (!results[0].sessionActive) return [3 /*break*/, 4];
+                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=currentMileage-? WHERE userID=?', [results[0].distance, userID])];
+            case 3:
+                _a.sent();
+                _a.label = 4;
+            case 4: return [4 /*yield*/, dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])];
+            case 5:
+                _a.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
                 return [2 /*return*/];
         }
     });
