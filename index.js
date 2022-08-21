@@ -268,6 +268,7 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                     if (!flat[e.sessionID])
                         flat[e.sessionID] = { logs: [] };
                     flat[e.sessionID] = {
+                        sessionID: e.sessionID,
                         sessionActive: e.sessionActive,
                         sessionStart: e.sessionStart,
                         sessionEnd: e.sessionEnd,

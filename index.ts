@@ -143,6 +143,7 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
         if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
 
         flat[e.sessionID] = {
+            sessionID: e.sessionID,
             sessionActive: e.sessionActive,
             sessionStart: e.sessionStart,
             sessionEnd: e.sessionEnd,
