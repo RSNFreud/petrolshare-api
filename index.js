@@ -278,12 +278,11 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                 if (!sessions)
                     return [2 /*return*/, reply.code(400).send('There are no sessions to be found')];
                 _c = dbQuery;
-                _d = ['SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ?'];
+                _d = ['SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ? ORDER BY l.date DESC'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
             case 4:
                 logs = _e.sent();
-                console.log(logs);
                 flat = {};
                 sessions.map(function (e) {
                     if (!flat[e.sessionID])
