@@ -39,7 +39,24 @@ const generateCode: any = async () => {
     return result
 }
 
-fastify.post('/user/login', async (request: any, reply: any) => {
+const retrieveGroupID = async (authenticationKey: string) => {
+    return (await dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey]))[0].groupID
+}
+
+const retrieveSessionID = async (groupID: string) => {
+    let res: any = await dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])
+    if (!res.length) {
+        res = await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])
+        return res.insertId
+    }
+    return res[0].sessionID
+}
+
+const retrieveID = async (authenticationKey: string) => {
+    return await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
+}
+
+fastify.post('/api/user/login', async (request: any, reply: any) => {
     const { body } = request
 
     if (!('emailAddress' in body) || !('password' in body)) {
@@ -59,7 +76,7 @@ fastify.post('/user/login', async (request: any, reply: any) => {
     }
 })
 
-fastify.post('/user/register', async (request: any, reply: any) => {
+fastify.post('/api/user/register', async (request: any, reply: any) => {
     const { body } = request
 
     if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
@@ -77,7 +94,7 @@ fastify.post('/user/register', async (request: any, reply: any) => {
     reply.send(code)
 })
 
-fastify.post('/user/change-group', async (request: any, reply: any) => {
+fastify.post('/api/user/change-group', async (request: any, reply: any) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('groupID' in body)) {
@@ -90,7 +107,7 @@ fastify.post('/user/change-group', async (request: any, reply: any) => {
 
 })
 
-fastify.get('/user/get', async (request: any, reply: any) => {
+fastify.get('/api/user/get', async (request: any, reply: any) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -106,7 +123,7 @@ fastify.get('/user/get', async (request: any, reply: any) => {
     reply.send(results)
 })
 
-fastify.get('/distance/get', async (request: any, reply: any) => {
+fastify.get('/api/distance/get', async (request: any, reply: any) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -125,7 +142,7 @@ fastify.get('/distance/get', async (request: any, reply: any) => {
     reply.send(Math.round(total * 10) / 10)
 })
 
-fastify.post('/distance/reset', async (request: any, reply: any) => {
+fastify.post('/api/distance/reset', async (request: any, reply: any) => {
     const { body } = request
 
     if (!body || !('authenticationKey' in body)) {
@@ -139,7 +156,7 @@ fastify.post('/distance/reset', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-fastify.post('/distance/add', async (request: any, reply: any) => {
+fastify.post('/api/distance/add', async (request: any, reply: any) => {
     const { body } = request
 
     if (!body || !('distance' in body) || !('authenticationKey' in body)) {
@@ -160,7 +177,7 @@ fastify.post('/distance/add', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-fastify.get('/logs/get', async (request: any, reply: any) => {
+fastify.get('/api/logs/get', async (request: any, reply: any) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -199,7 +216,7 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
     reply.send(flat)
 })
 
-fastify.post('/logs/delete', async (request: any, reply: any) => {
+fastify.post('/api/logs/delete', async (request: any, reply: any) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('logID' in body)) {
@@ -220,7 +237,7 @@ fastify.post('/logs/delete', async (request: any, reply: any) => {
 
 })
 
-fastify.post('/logs/edit', async (request: any, reply: any) => {
+fastify.post('/api/logs/edit', async (request: any, reply: any) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('logID' in body) || !('distance' in body)) {
@@ -241,25 +258,7 @@ fastify.post('/logs/edit', async (request: any, reply: any) => {
     if (!results) return reply.code(400).send('There are no logs to be found')
 })
 
-
-const retrieveGroupID = async (authenticationKey: string) => {
-    return (await dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey]))[0].groupID
-}
-
-const retrieveSessionID = async (groupID: string) => {
-    let res: any = await dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])
-    if (!res.length) {
-        res = await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])
-        return res.insertId
-    }
-    return res[0].sessionID
-}
-
-const retrieveID = async (authenticationKey: string) => {
-    return await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
-}
-
-fastify.get('/preset/get', async (request: any, reply: any) => {
+fastify.get('/api/preset/get', async (request: any, reply: any) => {
     const { query } = request
 
     if (!query || !('authenticationKey' in query)) {
@@ -279,7 +278,7 @@ fastify.get('/preset/get', async (request: any, reply: any) => {
     reply.send(results)
 })
 
-fastify.post('/preset/add', async (request: any, reply: any) => {
+fastify.post('/api/preset/add', async (request: any, reply: any) => {
     const { body } = request
 
     if (!body || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
@@ -298,7 +297,7 @@ fastify.post('/preset/add', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-fastify.post('/preset/edit', async (request: any, reply: any) => {
+fastify.post('/api/preset/edit', async (request: any, reply: any) => {
     const { body } = request
 
     if (!body || !('presetID' in body) || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
@@ -317,7 +316,7 @@ fastify.post('/preset/edit', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-fastify.post('/preset/delete', async (request: any, reply: any) => {
+fastify.post('/api/preset/delete', async (request: any, reply: any) => {
     const { body } = request
 
     if (!body || !('presetID' in body) || !('authenticationKey' in body)) {

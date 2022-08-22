@@ -106,7 +106,39 @@ var generateCode = function () { return __awaiter(void 0, void 0, void 0, functi
         }
     });
 }); };
-fastify.post('/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+var retrieveGroupID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey])];
+            case 1: return [2 /*return*/, (_a.sent())[0].groupID];
+        }
+    });
+}); };
+var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, void 0, function () {
+    var res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])];
+            case 1:
+                res = _a.sent();
+                if (!!res.length) return [3 /*break*/, 3];
+                return [4 /*yield*/, dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])];
+            case 2:
+                res = _a.sent();
+                return [2 /*return*/, res.insertId];
+            case 3: return [2 /*return*/, res[0].sessionID];
+        }
+    });
+}); };
+var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])];
+            case 1: return [2 /*return*/, _a.sent()];
+        }
+    });
+}); };
+fastify.post('/api/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, code, _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
@@ -145,7 +177,7 @@ fastify.post('/user/login', function (request, reply) { return __awaiter(void 0,
         }
     });
 }); });
-fastify.post('/user/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/user/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, password, code, _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
@@ -175,7 +207,7 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
         }
     });
 }); });
-fastify.post('/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -196,7 +228,7 @@ fastify.post('/user/change-group', function (request, reply) { return __awaiter(
         }
     });
 }); });
-fastify.get('/user/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get('/api/user/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -218,7 +250,7 @@ fastify.get('/user/get', function (request, reply) { return __awaiter(void 0, vo
         }
     });
 }); });
-fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get('/api/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results, total;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -245,7 +277,7 @@ fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0
         }
     });
 }); });
-fastify.post('/distance/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/distance/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, groupID;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -266,7 +298,7 @@ fastify.post('/distance/reset', function (request, reply) { return __awaiter(voi
         }
     });
 }); });
-fastify.post('/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, log, sessionID, err_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -303,7 +335,7 @@ fastify.post('/distance/add', function (request, reply) { return __awaiter(void 
         }
     });
 }); });
-fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get('/api/logs/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, sessions, _a, _b, logs, _c, _d, flat;
     return __generator(this, function (_e) {
         switch (_e.label) {
@@ -348,7 +380,7 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
         }
     });
 }); });
-fastify.post('/logs/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/logs/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -375,7 +407,7 @@ fastify.post('/logs/delete', function (request, reply) { return __awaiter(void 0
         }
     });
 }); });
-fastify.post('/logs/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/logs/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -404,39 +436,7 @@ fastify.post('/logs/edit', function (request, reply) { return __awaiter(void 0, 
         }
     });
 }); });
-var retrieveGroupID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey])];
-            case 1: return [2 /*return*/, (_a.sent())[0].groupID];
-        }
-    });
-}); };
-var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, void 0, function () {
-    var res;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])];
-            case 1:
-                res = _a.sent();
-                if (!!res.length) return [3 /*break*/, 3];
-                return [4 /*yield*/, dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])];
-            case 2:
-                res = _a.sent();
-                return [2 /*return*/, res.insertId];
-            case 3: return [2 /*return*/, res[0].sessionID];
-        }
-    });
-}); };
-var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])];
-            case 1: return [2 /*return*/, _a.sent()];
-        }
-    });
-}); };
-fastify.get('/preset/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get('/api/preset/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -462,7 +462,7 @@ fastify.get('/preset/get', function (request, reply) { return __awaiter(void 0, 
         }
     });
 }); });
-fastify.post('/preset/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/preset/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -486,7 +486,7 @@ fastify.post('/preset/add', function (request, reply) { return __awaiter(void 0,
         }
     });
 }); });
-fastify.post('/preset/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/preset/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -510,7 +510,7 @@ fastify.post('/preset/edit', function (request, reply) { return __awaiter(void 0
         }
     });
 }); });
-fastify.post('/preset/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID;
     return __generator(this, function (_a) {
         switch (_a.label) {
