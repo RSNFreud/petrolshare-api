@@ -175,6 +175,28 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
         }
     });
 }); });
+fastify.get('/user/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, userID, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+            case 1:
+                userID = (_a.sent())[0].userID;
+                return [4 /*yield*/, dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])];
+            case 2:
+                results = _a.sent();
+                if (!results)
+                    return [2 /*return*/, reply.send('No user found!').code(400)];
+                reply.send(results);
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.get('/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results, total;
     return __generator(this, function (_a) {

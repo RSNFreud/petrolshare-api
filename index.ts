@@ -77,6 +77,22 @@ fastify.post('/user/register', async (request: any, reply: any) => {
     reply.send(code)
 })
 
+fastify.get('/user/get', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userID = (await retrieveID(query['authenticationKey']))[0].userID
+
+    const results = await dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])
+
+    if (!results) return reply.send('No user found!').code(400)
+
+    reply.send(results)
+})
+
 fastify.get('/distance/get', async (request: any, reply: any) => {
     const { query } = request
 
