@@ -142,6 +142,8 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
     if (!sessions) return reply.code(400).send('There are no sessions to be found')
 
     let logs = await dbQuery('SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
+    console.log(logs);
+
 
     let flat: any = {}
 
@@ -159,6 +161,8 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
     })
 
     logs.map(e => {
+        if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
+
         flat[e.sessionID] = {
             ...flat[e.sessionID],
             logs: [...flat[e.sessionID].logs, { fullName: e.fullName, distance: e.distance, date: e.date, logID: e.logID }]

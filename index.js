@@ -283,6 +283,7 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
             case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
             case 4:
                 logs = _e.sent();
+                console.log(logs);
                 flat = {};
                 sessions.map(function (e) {
                     if (!flat[e.sessionID])
@@ -296,6 +297,8 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                     };
                 });
                 logs.map(function (e) {
+                    if (!flat[e.sessionID])
+                        flat[e.sessionID] = { logs: [] };
                     flat[e.sessionID] = __assign(__assign({}, flat[e.sessionID]), { logs: __spreadArray(__spreadArray([], flat[e.sessionID].logs, true), [{ fullName: e.fullName, distance: e.distance, date: e.date, logID: e.logID }], false) });
                 });
                 reply.send(flat);
