@@ -175,6 +175,27 @@ fastify.post('/user/register', function (request, reply) { return __awaiter(void
         }
     });
 }); });
+fastify.post('/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('groupID' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE groupID=?', [body['groupID']])];
+            case 1:
+                results = _a.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send("There is no group with that ID")];
+                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])];
+            case 2:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.get('/user/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results;
     return __generator(this, function (_a) {

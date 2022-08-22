@@ -77,6 +77,19 @@ fastify.post('/user/register', async (request: any, reply: any) => {
     reply.send(code)
 })
 
+fastify.post('/user/change-group', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('groupID' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    const results = await dbQuery('SELECT groupID FROM users WHERE groupID=?', [body['groupID']])
+
+    if (!results.length) return reply.code(400).send("There is no group with that ID")
+    await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])
+
+})
+
 fastify.get('/user/get', async (request: any, reply: any) => {
     const { query } = request
 
