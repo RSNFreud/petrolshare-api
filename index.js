@@ -232,7 +232,7 @@ fastify.post('/distance/add', function (request, reply) { return __awaiter(void 
                 if (!body || !('distance' in body) || !('authenticationKey' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('UPDATE users SET currentMileage=currentMileage+? WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery('SELECT * FROM users WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])];
             case 1:
                 results = _a.sent();
                 if (!results)
@@ -246,7 +246,7 @@ fastify.post('/distance/add', function (request, reply) { return __awaiter(void 
                 _a.label = 4;
             case 4:
                 _a.trys.push([4, 6, , 7]);
-                return [4 /*yield*/, dbQuery('INSERT INTO logs(userID, distance, date, groupID, sessionID) VALUES(?,?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID, sessionID])];
+                return [4 /*yield*/, dbQuery('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])];
             case 5:
                 _a.sent();
                 return [3 /*break*/, 7];

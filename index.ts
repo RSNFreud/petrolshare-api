@@ -117,13 +117,13 @@ fastify.post('/distance/add', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('UPDATE users SET currentMileage=currentMileage+? WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])
+    const results = await dbQuery('SELECT * FROM users WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])
     if (!results) return reply.code(400).send('This user does not exist!')
     const log = (await dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [body['authenticationKey']]))[0]
     const sessionID = await retrieveSessionID(log.groupID)
 
     try {
-        await dbQuery('INSERT INTO logs(userID, distance, date, groupID, sessionID) VALUES(?,?,?,?,?)', [log.userID, body["distance"], Date.now(), log.groupID, sessionID])
+        await dbQuery('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])
     } catch (err) {
         console.log(err);
     }
