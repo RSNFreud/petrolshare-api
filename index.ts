@@ -141,10 +141,9 @@ fastify.get('/logs/get', async (request: any, reply: any) => {
     let sessions = await dbQuery('SELECT sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
     if (!sessions) return reply.code(400).send('There are no sessions to be found')
 
-    let logs = await dbQuery('SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ? ORDER BY l.date DESC', [await retrieveGroupID(query['authenticationKey'])])
+    let logs = await dbQuery('SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? ORDER BY l.date DESC', [await retrieveGroupID(query['authenticationKey'])])
 
     let flat: any = {}
-
     sessions.map(e => {
         if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
 
@@ -211,19 +210,6 @@ fastify.post('/logs/edit', async (request: any, reply: any) => {
     await dbQuery('UPDATE logs SET distance=? WHERE logID=?', [body["distance"], body["logID"]])
 
     if (!results) return reply.code(400).send('There are no logs to be found')
-})
-
-fastify.get('/summary/get', async (request: any, reply: any) => {
-    const { query } = request
-
-    if (!('authenticationKey' in query)) {
-        return reply.code(400).send('Missing required field!')
-    }
-
-    const results = await dbQuery('SELECT fullName, currentMileage FROM users WHERE groupID = ?', [await retrieveGroupID(query['authenticationKey'])])
-    if (!results) return reply.code(400).send('There are no users to be found')
-
-    reply.send(results)
 })
 
 

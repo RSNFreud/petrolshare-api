@@ -278,7 +278,7 @@ fastify.get('/logs/get', function (request, reply) { return __awaiter(void 0, vo
                 if (!sessions)
                     return [2 /*return*/, reply.code(400).send('There are no sessions to be found')];
                 _c = dbQuery;
-                _d = ['SELECT l.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.groupID = ? ORDER BY l.date DESC'];
+                _d = ['SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? ORDER BY l.date DESC'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
             case 4:
@@ -357,28 +357,6 @@ fastify.post('/logs/edit', function (request, reply) { return __awaiter(void 0, 
                 _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
-                return [2 /*return*/];
-        }
-    });
-}); });
-fastify.get('/summary/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, results, _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
-            case 0:
-                query = request.query;
-                if (!('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
-                }
-                _a = dbQuery;
-                _b = ['SELECT fullName, currentMileage FROM users WHERE groupID = ?'];
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
-            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
-            case 2:
-                results = _c.sent();
-                if (!results)
-                    return [2 /*return*/, reply.code(400).send('There are no users to be found')];
-                reply.send(results);
                 return [2 /*return*/];
         }
     });
