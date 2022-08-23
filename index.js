@@ -138,6 +138,7 @@ var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0,
         }
     });
 }); };
+// USER
 fastify.post('/api/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, code, _a;
     return __generator(this, function (_b) {
@@ -250,6 +251,7 @@ fastify.get('/api/user/get', function (request, reply) { return __awaiter(void 0
         }
     });
 }); });
+// DISTANCE
 fastify.get('/api/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results, total;
     return __generator(this, function (_a) {
@@ -272,7 +274,7 @@ fastify.get('/api/distance/get', function (request, reply) { return __awaiter(vo
                     var distance = _a.distance;
                     total += distance;
                 });
-                reply.send(Math.round(total * 10) / 10);
+                reply.send(Math.round(total * 100) / 100);
                 return [2 /*return*/];
         }
     });
@@ -335,6 +337,7 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
         }
     });
 }); });
+// LOGS
 fastify.get('/api/logs/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, sessions, _a, _b, logs, _c, _d, flat;
     return __generator(this, function (_e) {
@@ -436,6 +439,7 @@ fastify.post('/api/logs/edit', function (request, reply) { return __awaiter(void
         }
     });
 }); });
+// PRESETS
 fastify.get('/api/preset/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results;
     return __generator(this, function (_a) {
@@ -529,6 +533,53 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
             case 2:
                 _a.sent();
                 reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
+// PETROL
+fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, results, _a, _b, distances, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f;
+    return __generator(this, function (_g) {
+        switch (_g.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('totalPrice' in body) || !('litersFilled' in body) || !('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                _a = dbQuery;
+                _b = ['SELECT l.distance, s.sessionActive, s.sessionID, u.fullName FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_g.sent()]]))];
+            case 2:
+                results = _g.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send('No logs found')];
+                distances = {};
+                results.map(function (e) {
+                    if (!(e.fullName in distances))
+                        distances[e.fullName] = 0;
+                    distances[e.fullName] = distances[e.fullName] + e.distance;
+                });
+                totalDistance = Math.round(Object.values(distances).reduce(function (a, b) { return a + b; }) * 100) / 100;
+                pricePerLiter = body['totalPrice'] / body['litersFilled'];
+                litersPerKm = body['litersFilled'] / totalDistance;
+                Object.entries(distances).map(function (_a) {
+                    var key = _a[0], value = _a[1];
+                    distances[key] = Math.round(value * litersPerKm * pricePerLiter * 100) / 100;
+                });
+                _c = dbQuery;
+                _d = ['UPDATE sessions SET invoice=?, sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
+                _e = [JSON.stringify(distances), Date.now()];
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_g.sent()])]))];
+            case 4:
+                _g.sent();
+                _f = retrieveSessionID;
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 5:
+                _f.apply(void 0, [_g.sent()]);
+                reply.send(distances);
                 return [2 /*return*/];
         }
     });

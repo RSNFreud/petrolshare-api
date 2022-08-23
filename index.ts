@@ -56,6 +56,7 @@ const retrieveID = async (authenticationKey: string) => {
     return await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
 }
 
+// USER
 fastify.post('/api/user/login', async (request: any, reply: any) => {
     const { body } = request
 
@@ -123,6 +124,7 @@ fastify.get('/api/user/get', async (request: any, reply: any) => {
     reply.send(results)
 })
 
+// DISTANCE
 fastify.get('/api/distance/get', async (request: any, reply: any) => {
     const { query } = request
 
@@ -139,7 +141,7 @@ fastify.get('/api/distance/get', async (request: any, reply: any) => {
     results.map(({ distance }) => {
         total += distance
     })
-    reply.send(Math.round(total * 10) / 10)
+    reply.send(Math.round(total * 100) / 100)
 })
 
 fastify.post('/api/distance/reset', async (request: any, reply: any) => {
@@ -177,6 +179,7 @@ fastify.post('/api/distance/add', async (request: any, reply: any) => {
     reply.code(200)
 })
 
+// LOGS
 fastify.get('/api/logs/get', async (request: any, reply: any) => {
     const { query } = request
 
@@ -258,6 +261,7 @@ fastify.post('/api/logs/edit', async (request: any, reply: any) => {
     if (!results) return reply.code(400).send('There are no logs to be found')
 })
 
+// PRESETS
 fastify.get('/api/preset/get', async (request: any, reply: any) => {
     const { query } = request
 
@@ -332,6 +336,41 @@ fastify.post('/api/preset/delete', async (request: any, reply: any) => {
 
     await dbQuery('DELETE FROM presets WHERE presetID=?', [body['presetID']])
     reply.code(200)
+})
+
+// PETROL
+fastify.post('/api/petrol/add', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!body || !('totalPrice' in body) || !('litersFilled' in body) || !('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.sessionID, u.fullName FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
+
+    if (!results.length) return reply.code(400).send('No logs found')
+
+    let distances: any = {
+
+    }
+    results.map(e => {
+        if (!(e.fullName in distances)) distances[e.fullName] = 0
+        distances[e.fullName] = distances[e.fullName] + e.distance
+    })
+
+    const totalDistance = Math.round(Object.values(distances).reduce((a: any, b: any) => a + b) * 100) / 100
+    const pricePerLiter = body['totalPrice'] / body['litersFilled']
+    const litersPerKm = body['litersFilled'] / totalDistance
+
+    Object.entries(distances).map(([key, value]: any) => {
+        distances[key] = Math.round(value * litersPerKm * pricePerLiter * 100) / 100
+    })
+
+    await dbQuery('UPDATE sessions SET invoice=?, sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [JSON.stringify(distances), Date.now(), await retrieveGroupID(body['authenticationKey'])])
+
+    retrieveSessionID(await retrieveGroupID(body['authenticationKey']))
+
+    reply.send(distances)
 })
 
 // Run the server!
