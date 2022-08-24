@@ -378,13 +378,19 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 fastify.get('/api/invoices/get', async (request: any, reply: any) => {
     const { query } = request
 
-    if (!query || !('authenticationKey' in query) || !('invoiceID' in query)) {
+    if (!query || !('authenticationKey' in query)) {
         return reply.code(400).send('Missing required field!')
     }
     let userID = await retrieveID(query['authenticationKey'])
 
     if (!userID.length) {
         return reply.code(400).send('This user does not exist!')
+    }
+
+    if (!('invoiceID' in query)) {
+        const results = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=?', [await retrieveGroupID(query['authenticationKey'])])
+        if (!results.length) return reply.code(400).send('There are no invoices in that group!')
+        return reply.send(results)
     }
 
     const results = await dbQuery('SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])

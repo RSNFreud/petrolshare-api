@@ -589,27 +589,38 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
 }); });
 // INVOICES
 fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, userID, results, _a, _b, _c;
-    return __generator(this, function (_d) {
-        switch (_d.label) {
+    var query, userID, results_1, _a, _b, results, _c, _d, _e;
+    return __generator(this, function (_f) {
+        switch (_f.label) {
             case 0:
                 query = request.query;
-                if (!query || !('authenticationKey' in query) || !('invoiceID' in query)) {
+                if (!query || !('authenticationKey' in query)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
-                userID = _d.sent();
+                userID = _f.sent();
                 if (!userID.length) {
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
                 }
+                if (!!('invoiceID' in query)) return [3 /*break*/, 4];
                 _a = dbQuery;
-                _b = ['SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
-                _c = [query["invoiceID"]];
+                _b = ['SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=?'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
-            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_f.sent()]]))];
             case 3:
-                results = _d.sent();
+                results_1 = _f.sent();
+                if (!results_1.length)
+                    return [2 /*return*/, reply.code(400).send('There are no invoices in that group!')];
+                return [2 /*return*/, reply.send(results_1)];
+            case 4:
+                _c = dbQuery;
+                _d = ['SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _e = [query["invoiceID"]];
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 5: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_f.sent()])]))];
+            case 6:
+                results = _f.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
                 reply.send(results[0]);
