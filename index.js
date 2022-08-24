@@ -610,7 +610,7 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
             case 3:
                 results = _d.sent();
-                if (!results)
+                if (!results.length)
                     return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
                 reply.send(results);
                 return [2 /*return*/];
