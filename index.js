@@ -612,7 +612,7 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
                 results = _d.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
-                reply.send(results);
+                reply.send(results[0]);
                 return [2 /*return*/];
         }
     });
