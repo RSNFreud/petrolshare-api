@@ -346,23 +346,27 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.sessionID, u.fullName FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
+    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
 
     if (!results.length) return reply.code(400).send('No logs found')
 
     let distances: any = {}
 
-    results.map(e => {
-        if (!(e.fullName in distances)) distances[e.fullName] = 0
-        distances[e.fullName] = distances[e.fullName] + e.distance
-    })
+    for (let i = 0; i < results.length; i++) {
+        const e = results[i];
 
-    const totalDistance = Math.round(Object.values(distances).reduce((a: any, b: any) => a + b) * 100) / 100
+        if (!(e.userID in distances)) {
+            distances[e.userID] = { distance: 0, fullName: e["fullName"] }
+        }
+        distances[e.userID] = { distance: parseFloat(distances[e.userID].distance) + parseFloat(e.distance), fullName: e["fullName"] }
+    }
+
+    const totalDistance: any = Object.values(distances).reduce((a: any, b: any) => a["distance"] + b["distance"])
     const pricePerLiter = body['totalPrice'] / body['litersFilled']
     const litersPerKm = body['litersFilled'] / totalDistance
 
     Object.entries(distances).map(([key, value]: any) => {
-        distances[key] = { paymentDue: Math.round(value * litersPerKm * pricePerLiter * 100) / 100, paid: false, distance: value }
+        distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === parseInt(results[0]['userID']), distance: Math.round(value.distance * 100) / 100 }
     })
 
     await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
@@ -397,6 +401,30 @@ fastify.get('/api/invoices/get', async (request: any, reply: any) => {
     if (!results.length) return reply.code(400).send('There are no invoices with that ID!')
 
     reply.send(results[0])
+})
+
+fastify.post('/api/invoices/pay', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    // let userID = await retrieveID(query['authenticationKey'])
+
+    // if (!userID.length) {
+    //     return reply.code(400).send('This user does not exist!')
+    // }
+
+    // if (!('invoiceID' in query)) {
+    //     const results = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=?', [await retrieveGroupID(query['authenticationKey'])])
+    //     if (!results.length) return reply.code(400).send('There are no invoices in that group!')
+    //     return reply.send(results)
+    // }
+
+    // const results = await dbQuery('SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])
+    // if (!results.length) return reply.code(400).send('There are no invoices with that ID!')
+
+    // reply.send(results[0])
 })
 
 // Run the server!

@@ -539,7 +539,7 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
 }); });
 // PETROL
 fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, _a, _b, distances, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f, res;
+    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f, res;
     return __generator(this, function (_g) {
         switch (_g.label) {
             case 0:
@@ -548,7 +548,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive, s.sessionID, u.fullName FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
+                _b = ['SELECT l.distance, s.sessionActive, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_g.sent()]]))];
             case 2:
@@ -556,17 +556,19 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send('No logs found')];
                 distances = {};
-                results.map(function (e) {
-                    if (!(e.fullName in distances))
-                        distances[e.fullName] = 0;
-                    distances[e.fullName] = distances[e.fullName] + e.distance;
-                });
-                totalDistance = Math.round(Object.values(distances).reduce(function (a, b) { return a + b; }) * 100) / 100;
+                for (i = 0; i < results.length; i++) {
+                    e = results[i];
+                    if (!(e.userID in distances)) {
+                        distances[e.userID] = { distance: 0, fullName: e["fullName"] };
+                    }
+                    distances[e.userID] = { distance: parseFloat(distances[e.userID].distance) + parseFloat(e.distance), fullName: e["fullName"] };
+                }
+                totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] + b["distance"]; });
                 pricePerLiter = body['totalPrice'] / body['litersFilled'];
                 litersPerKm = body['litersFilled'] / totalDistance;
                 Object.entries(distances).map(function (_a) {
                     var key = _a[0], value = _a[1];
-                    distances[key] = { paymentDue: Math.round(value * litersPerKm * pricePerLiter * 100) / 100, paid: false, distance: value };
+                    distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === parseInt(results[0]['userID']), distance: Math.round(value.distance * 100) / 100 };
                 });
                 _c = dbQuery;
                 _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
@@ -626,6 +628,16 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
                 reply.send(results[0]);
                 return [2 /*return*/];
         }
+    });
+}); });
+fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body;
+    return __generator(this, function (_a) {
+        body = request.body;
+        if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body)) {
+            return [2 /*return*/, reply.code(400).send('Missing required field!')];
+        }
+        return [2 /*return*/];
     });
 }); });
 // Run the server!
