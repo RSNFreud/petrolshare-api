@@ -409,22 +409,27 @@ fastify.post('/api/invoices/pay', async (request: any, reply: any) => {
     if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body)) {
         return reply.code(400).send('Missing required field!')
     }
-    // let userID = await retrieveID(query['authenticationKey'])
 
-    // if (!userID.length) {
-    //     return reply.code(400).send('This user does not exist!')
-    // }
+    let userID = await retrieveID(body['authenticationKey'])
 
-    // if (!('invoiceID' in query)) {
-    //     const results = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=?', [await retrieveGroupID(query['authenticationKey'])])
-    //     if (!results.length) return reply.code(400).send('There are no invoices in that group!')
-    //     return reply.send(results)
-    // }
+    if (!userID.length) {
+        return reply.code(400).send('This user does not exist!')
+    }
+    let results: any = await dbQuery('SELECT i.invoiceData FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?', [body["invoiceID"], await retrieveGroupID(body['authenticationKey'])])
+    if (!results.length) return reply.code(400).send('There are no invoices with that ID!')
 
-    // const results = await dbQuery('SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])
-    // if (!results.length) return reply.code(400).send('There are no invoices with that ID!')
+    results = JSON.parse(results[0].invoiceData)
 
-    // reply.send(results[0])
+    if (results[body["userID"]]) {
+        results[body["userID"]] = {
+            ...results[body["userID"]], paid: true
+        }
+    } else {
+        return reply.code(400).send('No user found with that ID!')
+    }
+    await dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
+
+    reply.send()
 })
 
 // Run the server!

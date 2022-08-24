@@ -631,13 +631,42 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
     });
 }); });
 fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body;
-    return __generator(this, function (_a) {
-        body = request.body;
-        if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body)) {
-            return [2 /*return*/, reply.code(400).send('Missing required field!')];
+    var body, userID, results, _a, _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = _d.sent();
+                if (!userID.length) {
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                }
+                _a = dbQuery;
+                _b = ['SELECT i.invoiceData FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _c = [body["invoiceID"]];
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
+            case 3:
+                results = _d.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
+                results = JSON.parse(results[0].invoiceData);
+                if (results[body["userID"]]) {
+                    results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { paid: true });
+                }
+                else {
+                    return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
+                }
+                return [4 /*yield*/, dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
+            case 4:
+                _d.sent();
+                reply.send();
+                return [2 /*return*/];
         }
-        return [2 /*return*/];
     });
 }); });
 // Run the server!
