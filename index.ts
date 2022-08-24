@@ -350,9 +350,8 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 
     if (!results.length) return reply.code(400).send('No logs found')
 
-    let distances: any = {
+    let distances: any = {}
 
-    }
     results.map(e => {
         if (!(e.fullName in distances)) distances[e.fullName] = 0
         distances[e.fullName] = distances[e.fullName] + e.distance
@@ -363,14 +362,35 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
     const litersPerKm = body['litersFilled'] / totalDistance
 
     Object.entries(distances).map(([key, value]: any) => {
-        distances[key] = Math.round(value * litersPerKm * pricePerLiter * 100) / 100
+        distances[key] = { paymentDue: Math.round(value * litersPerKm * pricePerLiter * 100) / 100, paid: false, distance: value }
     })
 
-    await dbQuery('UPDATE sessions SET invoice=?, sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [JSON.stringify(distances), Date.now(), await retrieveGroupID(body['authenticationKey'])])
-
+    await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     retrieveSessionID(await retrieveGroupID(body['authenticationKey']))
+    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance) VALUES (?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance])
 
-    reply.send(distances)
+
+    reply.send(res['insertId'])
+})
+
+// INVOICES
+
+fastify.get('/api/invoices/get', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!query || !('authenticationKey' in query) || !('invoiceID' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    let userID = await retrieveID(query['authenticationKey'])
+
+    if (!userID.length) {
+        return reply.code(400).send('This user does not exist!')
+    }
+
+    const results = await dbQuery('SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])
+    if (!results) return reply.code(400).send('There are no invoices with that ID!')
+
+    reply.send(results)
 })
 
 // Run the server!

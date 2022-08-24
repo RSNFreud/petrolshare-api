@@ -539,7 +539,7 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
 }); });
 // PETROL
 fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, _a, _b, distances, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f;
+    var body, results, _a, _b, distances, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f, res;
     return __generator(this, function (_g) {
         switch (_g.label) {
             case 0:
@@ -566,11 +566,11 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 litersPerKm = body['litersFilled'] / totalDistance;
                 Object.entries(distances).map(function (_a) {
                     var key = _a[0], value = _a[1];
-                    distances[key] = Math.round(value * litersPerKm * pricePerLiter * 100) / 100;
+                    distances[key] = { paymentDue: Math.round(value * litersPerKm * pricePerLiter * 100) / 100, paid: false, distance: value };
                 });
                 _c = dbQuery;
-                _d = ['UPDATE sessions SET invoice=?, sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
-                _e = [JSON.stringify(distances), Date.now()];
+                _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
+                _e = [Date.now()];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_g.sent()])]))];
             case 4:
@@ -579,7 +579,40 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 5:
                 _f.apply(void 0, [_g.sent()]);
-                reply.send(distances);
+                return [4 /*yield*/, dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance) VALUES (?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance])];
+            case 6:
+                res = _g.sent();
+                reply.send(res['insertId']);
+                return [2 /*return*/];
+        }
+    });
+}); });
+// INVOICES
+fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, userID, results, _a, _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0:
+                query = request.query;
+                if (!query || !('authenticationKey' in query) || !('invoiceID' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+            case 1:
+                userID = _d.sent();
+                if (!userID.length) {
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                }
+                _a = dbQuery;
+                _b = ['SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _c = [query["invoiceID"]];
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
+            case 3:
+                results = _d.sent();
+                if (!results)
+                    return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
+                reply.send(results);
                 return [2 /*return*/];
         }
     });
