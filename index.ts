@@ -115,9 +115,10 @@ fastify.get('/api/user/verify', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    let userID = (await retrieveID(query['authenticationKey']))
+    let userID = await retrieveID(query['authenticationKey'])
 
-    if (!userID.length) return reply.send('No user found!').code(400)
+    if (!userID.length) return reply.code(400).send('No user found!')
+
     reply.send(200)
 })
 
@@ -130,12 +131,12 @@ fastify.get('/api/user/get', async (request: any, reply: any) => {
 
     let userID = (await retrieveID(query['authenticationKey']))
 
-    if (!userID.length) return reply.send('No user found!').code(400)
+    if (!userID.length) return reply.code(400).send('No user found!')
     userID = userID[0].userID
 
     const results = await dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])
 
-    if (!results.length) return reply.send('No user found!').code(400)
+    if (!results.length) return reply.code(400).send('No user found!')
 
     reply.send(results)
 })
