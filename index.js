@@ -240,11 +240,14 @@ fastify.get('/api/user/get', function (request, reply) { return __awaiter(void 0
                 }
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
-                userID = (_a.sent())[0].userID;
+                userID = (_a.sent());
+                if (!userID.length)
+                    return [2 /*return*/, reply.send('No user found!').code(400)];
+                userID = userID[0].userID;
                 return [4 /*yield*/, dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])];
             case 2:
                 results = _a.sent();
-                if (!results)
+                if (!results.length)
                     return [2 /*return*/, reply.send('No user found!').code(400)];
                 reply.send(results);
                 return [2 /*return*/];

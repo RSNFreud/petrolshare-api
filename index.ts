@@ -115,11 +115,14 @@ fastify.get('/api/user/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const userID = (await retrieveID(query['authenticationKey']))[0].userID
+    let userID = (await retrieveID(query['authenticationKey']))
+
+    if (!userID.length) return reply.send('No user found!').code(400)
+    userID = userID[0].userID
 
     const results = await dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])
 
-    if (!results) return reply.send('No user found!').code(400)
+    if (!results.length) return reply.send('No user found!').code(400)
 
     reply.send(results)
 })
@@ -137,7 +140,7 @@ fastify.get('/api/distance/get', async (request: any, reply: any) => {
     const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])
 
     if (!results.length) return reply.send(0)
-    
+
     let total = 0;
     results.map(({ distance }) => {
         total += distance
