@@ -136,7 +136,8 @@ fastify.get('/api/distance/get', async (request: any, reply: any) => {
 
     const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])
 
-    if (!results) return reply.send(0)
+    if (!results.length) return reply.send(0)
+    
     let total = 0;
     results.map(({ distance }) => {
         total += distance

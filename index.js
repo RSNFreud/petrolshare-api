@@ -267,7 +267,7 @@ fastify.get('/api/distance/get', function (request, reply) { return __awaiter(vo
                 return [4 /*yield*/, dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])];
             case 2:
                 results = _a.sent();
-                if (!results)
+                if (!results.length)
                     return [2 /*return*/, reply.send(0)];
                 total = 0;
                 results.map(function (_a) {
