@@ -108,6 +108,19 @@ fastify.post('/api/user/change-group', async (request: any, reply: any) => {
 
 })
 
+fastify.get('/api/user/verify', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    let userID = (await retrieveID(query['authenticationKey']))
+
+    if (!userID.length) return reply.send('No user found!').code(400)
+    reply.send(200)
+})
+
 fastify.get('/api/user/get', async (request: any, reply: any) => {
     const { query } = request
 

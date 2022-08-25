@@ -229,6 +229,25 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
         }
     });
 }); });
+fastify.get('/api/user/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, userID;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+            case 1:
+                userID = (_a.sent());
+                if (!userID.length)
+                    return [2 /*return*/, reply.send('No user found!').code(400)];
+                reply.send(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.get('/api/user/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results;
     return __generator(this, function (_a) {
