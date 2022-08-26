@@ -645,7 +645,7 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
                 return [2 /*return*/, reply.send(results_1)];
             case 4:
                 _c = dbQuery;
-                _d = ['SELECT i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _d = ['SELECT u.fullName, i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?'];
                 _e = [query["invoiceID"]];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 5: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_f.sent()])]))];
