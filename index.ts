@@ -53,7 +53,9 @@ const retrieveSessionID = async (groupID: string) => {
 }
 
 const retrieveID = async (authenticationKey: string) => {
-    return await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
+    const res = await dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])
+    if (!res.length) return
+    return res[0].userID
 }
 
 // USER
@@ -117,7 +119,7 @@ fastify.get('/api/user/verify', async (request: any, reply: any) => {
 
     let userID = await retrieveID(query['authenticationKey'])
 
-    if (!userID.length) return reply.code(400).send('No user found!')
+    if (!userID) return reply.code(400).send('No user found!')
 
     reply.send(200)
 })
@@ -129,10 +131,9 @@ fastify.get('/api/user/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    let userID = (await retrieveID(query['authenticationKey']))
+    let userID = await retrieveID(query['authenticationKey'])
 
-    if (!userID.length) return reply.code(400).send('No user found!')
-    userID = userID[0].userID
+    if (!userID) return reply.code(400).send('No user found!')
 
     const results = await dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])
 
@@ -149,7 +150,8 @@ fastify.get('/api/distance/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const userID = (await retrieveID(query['authenticationKey']))[0].userID
+    const userID = await retrieveID(query['authenticationKey'])
+    if (!userID) return reply.code(400).send('No user found!')
 
     const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])
 
@@ -244,7 +246,9 @@ fastify.post('/api/logs/delete', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const userID = (await retrieveID(body['authenticationKey']))[0].userID
+    const userID = await retrieveID(body['authenticationKey'])
+    if (!userID) return reply.code(400).send('No user found!')
+
     const results = await dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])
 
     if (results[0].userID !== userID) {
@@ -265,7 +269,9 @@ fastify.post('/api/logs/edit', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const userID = (await retrieveID(body['authenticationKey']))[0].userID
+    const userID = await retrieveID(body['authenticationKey'])
+    if (!userID) return reply.code(400).send('No user found!')
+
     const results = await dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])
 
     if (!results.length) return reply.code(400).send('No log found with that ID')
@@ -287,12 +293,7 @@ fastify.get('/api/preset/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
     let userID = await retrieveID(query['authenticationKey'])
-
-    if (!userID.length) {
-        return reply.code(400).send('This user does not exist!')
-    }
-
-    userID = userID[0].userID
+    if (!userID) return reply.code(400).send('No user found!')
 
     const results = await dbQuery('SELECT presetName, distance, presetID FROM presets WHERE userID=?', [userID])
     if (!results) return reply.code(400).send('There are no presets!')
@@ -308,12 +309,7 @@ fastify.post('/api/preset/add', async (request: any, reply: any) => {
     }
 
     let userID = await retrieveID(body['authenticationKey'])
-
-    if (!userID.length) {
-        return reply.code(400).send('This user does not exist!')
-    }
-
-    userID = userID[0].userID
+    if (!userID) return reply.code(400).send('No user found!')
 
     await dbQuery('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])
     reply.code(200)
@@ -327,12 +323,8 @@ fastify.post('/api/preset/edit', async (request: any, reply: any) => {
     }
 
     let userID = await retrieveID(body['authenticationKey'])
+    if (!userID) return reply.code(400).send('No user found!')
 
-    if (!userID.length) {
-        return reply.code(400).send('This user does not exist!')
-    }
-
-    userID = userID[0].userID
 
     await dbQuery('UPDATE presets SET presetName=?, distance=? WHERE presetID=?', [body['presetName'], body['distance'], body['presetID']])
     reply.code(200)
@@ -346,11 +338,7 @@ fastify.post('/api/preset/delete', async (request: any, reply: any) => {
     }
 
     const userID = await retrieveID(body['authenticationKey'])
-
-    if (!userID.length) {
-        return reply.code(400).send('This user does not exist!')
-    }
-
+    if (!userID) return reply.code(400).send('No user found!')
 
     await dbQuery('DELETE FROM presets WHERE presetID=?', [body['presetID']])
     reply.code(200)
@@ -389,7 +377,7 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 
     await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     retrieveSessionID(await retrieveGroupID(body['authenticationKey']))
-    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance) VALUES (?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance])
+    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID) VALUES (?,?,?,?, ?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance, await retrieveID(body['authenticationKey'])])
 
 
     reply.send(res['insertId'])
@@ -404,10 +392,7 @@ fastify.get('/api/invoices/get', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
     let userID = await retrieveID(query['authenticationKey'])
-
-    if (!userID.length) {
-        return reply.code(400).send('This user does not exist!')
-    }
+    if (!userID) return reply.code(400).send('No user found!')
 
     if (!('invoiceID' in query)) {
         const results = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=?', [await retrieveGroupID(query['authenticationKey'])])
@@ -429,10 +414,9 @@ fastify.post('/api/invoices/pay', async (request: any, reply: any) => {
     }
 
     let userID = await retrieveID(body['authenticationKey'])
+    if (!userID) return reply.code(400).send('No user found!')
 
-    if (!userID.length) {
-        return reply.code(400).send('This user does not exist!')
-    }
+
     let results: any = await dbQuery('SELECT i.invoiceData FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?', [body["invoiceID"], await retrieveGroupID(body['authenticationKey'])])
     if (!results.length) return reply.code(400).send('There are no invoices with that ID!')
 

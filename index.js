@@ -131,10 +131,15 @@ var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, vo
     });
 }); };
 var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
+    var res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])];
-            case 1: return [2 /*return*/, _a.sent()];
+            case 1:
+                res = _a.sent();
+                if (!res.length)
+                    return [2 /*return*/];
+                return [2 /*return*/, res[0].userID];
         }
     });
 }); };
@@ -241,7 +246,7 @@ fastify.get('/api/user/verify', function (request, reply) { return __awaiter(voi
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
                 userID = _a.sent();
-                if (!userID.length)
+                if (!userID)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
                 reply.send(200);
                 return [2 /*return*/];
@@ -259,10 +264,9 @@ fastify.get('/api/user/get', function (request, reply) { return __awaiter(void 0
                 }
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
-                userID = (_a.sent());
-                if (!userID.length)
+                userID = _a.sent();
+                if (!userID)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
-                userID = userID[0].userID;
                 return [4 /*yield*/, dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])];
             case 2:
                 results = _a.sent();
@@ -285,7 +289,9 @@ fastify.get('/api/distance/get', function (request, reply) { return __awaiter(vo
                 }
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
-                userID = (_a.sent())[0].userID;
+                userID = _a.sent();
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 return [4 /*yield*/, dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])];
             case 2:
                 results = _a.sent();
@@ -416,7 +422,9 @@ fastify.post('/api/logs/delete', function (request, reply) { return __awaiter(vo
                 }
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 1:
-                userID = (_a.sent())[0].userID;
+                userID = _a.sent();
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 return [4 /*yield*/, dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])];
             case 2:
                 results = _a.sent();
@@ -443,7 +451,9 @@ fastify.post('/api/logs/edit', function (request, reply) { return __awaiter(void
                 }
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 1:
-                userID = (_a.sent())[0].userID;
+                userID = _a.sent();
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 return [4 /*yield*/, dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])];
             case 2:
                 results = _a.sent();
@@ -474,10 +484,8 @@ fastify.get('/api/preset/get', function (request, reply) { return __awaiter(void
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
                 userID = _a.sent();
-                if (!userID.length) {
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                }
-                userID = userID[0].userID;
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 return [4 /*yield*/, dbQuery('SELECT presetName, distance, presetID FROM presets WHERE userID=?', [userID])];
             case 2:
                 results = _a.sent();
@@ -500,10 +508,8 @@ fastify.post('/api/preset/add', function (request, reply) { return __awaiter(voi
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 1:
                 userID = _a.sent();
-                if (!userID.length) {
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                }
-                userID = userID[0].userID;
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 return [4 /*yield*/, dbQuery('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])];
             case 2:
                 _a.sent();
@@ -524,10 +530,8 @@ fastify.post('/api/preset/edit', function (request, reply) { return __awaiter(vo
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 1:
                 userID = _a.sent();
-                if (!userID.length) {
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                }
-                userID = userID[0].userID;
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 return [4 /*yield*/, dbQuery('UPDATE presets SET presetName=?, distance=? WHERE presetID=?', [body['presetName'], body['distance'], body['presetID']])];
             case 2:
                 _a.sent();
@@ -548,9 +552,8 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 1:
                 userID = _a.sent();
-                if (!userID.length) {
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                }
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 return [4 /*yield*/, dbQuery('DELETE FROM presets WHERE presetID=?', [body['presetID']])];
             case 2:
                 _a.sent();
@@ -561,9 +564,9 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
 }); });
 // PETROL
 fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f, res;
-    return __generator(this, function (_g) {
-        switch (_g.label) {
+    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f, res, _g, _h, _j;
+    return __generator(this, function (_k) {
+        switch (_k.label) {
             case 0:
                 body = request.body;
                 if (!body || !('totalPrice' in body) || !('litersFilled' in body) || !('authenticationKey' in body)) {
@@ -572,9 +575,9 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 _a = dbQuery;
                 _b = ['SELECT l.distance, s.sessionActive, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
-            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_g.sent()]]))];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_k.sent()]]))];
             case 2:
-                results = _g.sent();
+                results = _k.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send('No logs found')];
                 distances = {};
@@ -596,16 +599,20 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
                 _e = [Date.now()];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
-            case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_g.sent()])]))];
+            case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_k.sent()])]))];
             case 4:
-                _g.sent();
+                _k.sent();
                 _f = retrieveSessionID;
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 5:
-                _f.apply(void 0, [_g.sent()]);
-                return [4 /*yield*/, dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance) VALUES (?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance])];
-            case 6:
-                res = _g.sent();
+                _f.apply(void 0, [_k.sent()]);
+                _g = dbQuery;
+                _h = ['INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID) VALUES (?,?,?,?, ?)'];
+                _j = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance];
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 6: return [4 /*yield*/, _g.apply(void 0, _h.concat([_j.concat([_k.sent()])]))];
+            case 7:
+                res = _k.sent();
                 reply.send(res['insertId']);
                 return [2 /*return*/];
         }
@@ -624,9 +631,8 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
                 userID = _f.sent();
-                if (!userID.length) {
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                }
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 if (!!('invoiceID' in query)) return [3 /*break*/, 4];
                 _a = dbQuery;
                 _b = ['SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=?'];
@@ -664,9 +670,8 @@ fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(v
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 1:
                 userID = _d.sent();
-                if (!userID.length) {
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                }
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
                 _a = dbQuery;
                 _b = ['SELECT i.invoiceData FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
                 _c = [body["invoiceID"]];
