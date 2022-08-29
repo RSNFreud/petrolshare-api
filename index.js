@@ -769,12 +769,13 @@ fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0
             case 1:
                 results = _a.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
+                    return [2 /*return*/, reply.code(400).sendFile('views/fail.html')
+                        // await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
+                    ];
+                // await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
+                return [4 /*yield*/, reply.sendFile('views/success.html')];
             case 2:
-                _a.sent();
-                return [4 /*yield*/, reply.sendFile('index.html')];
-            case 3:
+                // await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
                 _a.sent();
                 return [2 /*return*/];
         }
