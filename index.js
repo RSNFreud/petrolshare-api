@@ -64,12 +64,43 @@ var mysql_1 = __importDefault(require("mysql"));
 require('dotenv').config();
 var argon2_1 = __importDefault(require("argon2"));
 var cors_1 = __importDefault(require("@fastify/cors"));
+var nodemailer_1 = __importDefault(require("nodemailer"));
 var fastify = (0, fastify_1.default)({});
+fastify.register(require('@fastify/static'), {
+    root: __dirname,
+});
 fastify.register(cors_1.default, {});
 var conn = mysql_1.default.createConnection({
     host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
 });
 conn.connect();
+var sendMail = function (address, subject, message) { return __awaiter(void 0, void 0, void 0, function () {
+    var transporter, info;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                transporter = nodemailer_1.default.createTransport({
+                    host: 'smtp.gmail.com',
+                    port: 465,
+                    secure: true,
+                    auth: {
+                        user: process.env.EMAIL_ADDRESS,
+                        pass: process.env.EMAIL_PASSWORD,
+                    },
+                });
+                return [4 /*yield*/, transporter.sendMail({
+                        from: '"PetrolShare" <petrolshare@freud-online.co.uk>',
+                        to: address,
+                        subject: subject,
+                        html: message,
+                    })];
+            case 1:
+                info = _a.sent();
+                console.log("Message sent: %s", info.messageId);
+                return [2 /*return*/];
+        }
+    });
+}); };
 function dbQuery(query, parameters) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -86,6 +117,26 @@ function dbQuery(query, parameters) {
         });
     });
 }
+var generateEmailCode = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var result, characters, charactersLength, i;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                result = '';
+                characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                charactersLength = characters.length;
+                for (i = 0; i < 25; i++) {
+                    result += characters.charAt(Math.floor(Math.random() *
+                        charactersLength));
+                }
+                return [4 /*yield*/, dbQuery('SELECT * from users where verificationCode=?', [result])];
+            case 1:
+                if ((_a.sent()).length)
+                    return [2 /*return*/, generateEmailCode()];
+                return [2 /*return*/, result];
+        }
+    });
+}); };
 var generateCode = function () { return __awaiter(void 0, void 0, void 0, function () {
     var result, characters, charactersLength, i;
     return __generator(this, function (_a) {
@@ -160,7 +211,7 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Incorrect username or password.')];
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
-                if (!_b.sent()) return [3 /*break*/, 7];
+                if (!_b.sent()) return [3 /*break*/, 9];
                 _a = results[0].authenticationKey;
                 if (_a) return [3 /*break*/, 4];
                 return [4 /*yield*/, generateCode()];
@@ -169,22 +220,26 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                 _b.label = 4;
             case 4:
                 code = _a;
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID });
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID, newUser: results[0].newUser });
                 if (!!results[0].authenticationKey) return [3 /*break*/, 6];
-                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
+                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=?, newUser=0 WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 5:
                 _b.sent();
-                _b.label = 6;
-            case 6: return [3 /*break*/, 8];
+                return [3 /*break*/, 8];
+            case 6: return [4 /*yield*/, dbQuery('UPDATE users SET newUser=0 WHERE emailAddress=?', [body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 7:
-                reply.code(400).send('Incorrect username or password.');
+                _b.sent();
                 _b.label = 8;
-            case 8: return [2 /*return*/];
+            case 8: return [3 /*break*/, 10];
+            case 9:
+                reply.code(400).send('Incorrect username or password.');
+                _b.label = 10;
+            case 10: return [2 /*return*/];
         }
     });
 }); });
 fastify.post('/api/user/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, password, code, _a, _b, _c;
+    var body, results, password, code, emailCode, _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
@@ -201,13 +256,17 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
                 return [4 /*yield*/, generateCode()];
             case 2:
                 code = _d.sent();
+                return [4 /*yield*/, generateEmailCode()];
+            case 3:
+                emailCode = _d.sent();
                 _a = dbQuery;
-                _b = ['INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey) VALUES (?,?,?,?,?)'];
+                _b = ['INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?,?)'];
                 _c = [body['groupID'], body['fullName'], body['emailAddress']];
                 return [4 /*yield*/, password];
-            case 3: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent(), code])]))];
-            case 4:
+            case 4: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent(), code, emailCode])]))];
+            case 5:
                 _d.sent();
+                sendMail(body['emailAddress'], 'Verify your Mail', "Hey " + body['fullName'] + ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
                 reply.send(code);
                 return [2 /*return*/];
         }
@@ -235,7 +294,7 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
     });
 }); });
 fastify.get('/api/user/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, userID;
+    var query, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -243,12 +302,12 @@ fastify.get('/api/user/verify', function (request, reply) { return __awaiter(voi
                 if (!('authenticationKey' in query)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+                return [4 /*yield*/, dbQuery('SELECT * from users WHERE authenticationKey=?', [query['authenticationKey']])];
             case 1:
-                userID = _a.sent();
-                if (!userID)
+                results = _a.sent();
+                if (!results)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
-                reply.send(200);
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID, newUser: results[0].newUser });
                 return [2 /*return*/];
         }
     });
@@ -692,6 +751,31 @@ fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(v
             case 4:
                 _d.sent();
                 reply.send();
+                return [2 /*return*/];
+        }
+    });
+}); });
+// EMAIL
+fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!query || !('code' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE verificationCode=?', [query['code']])];
+            case 1:
+                results = _a.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                return [4 /*yield*/, dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
+            case 2:
+                _a.sent();
+                return [4 /*yield*/, reply.sendFile('index.html')];
+            case 3:
+                _a.sent();
                 return [2 /*return*/];
         }
     });

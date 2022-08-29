@@ -3,8 +3,12 @@ import mysql from 'mysql'
 require('dotenv').config()
 import argon2 from 'argon2';
 import cors from '@fastify/cors'
+import nodemailer from "nodemailer";
 
 const fastify: FastifyInstance = Fastify({})
+fastify.register(require('@fastify/static'), {
+    root: __dirname,
+})
 fastify.register(cors, {})
 
 const conn = mysql.createConnection({
@@ -12,6 +16,29 @@ const conn = mysql.createConnection({
 })
 
 conn.connect()
+
+
+const sendMail = async (address: string, subject: string, message: string) => {
+
+    let transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+            user: process.env.EMAIL_ADDRESS,
+            pass: process.env.EMAIL_PASSWORD,
+        },
+    });
+
+    let info = await transporter.sendMail({
+        from: '"PetrolShare" <petrolshare@freud-online.co.uk>',
+        to: address,
+        subject: subject,
+        html: message,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+}
 
 async function dbQuery(query: string, parameters?: Array<any>) {
     return new Promise<Array<any>>((res, rej) => {
@@ -24,6 +51,19 @@ async function dbQuery(query: string, parameters?: Array<any>) {
             rej(err);
         }
     })
+}
+
+const generateEmailCode: any = async () => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for (var i = 0; i < 25; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            charactersLength));
+    }
+
+    if ((await dbQuery('SELECT * from users where verificationCode=?', [result])).length) return generateEmailCode()
+    return result
 }
 
 const generateCode: any = async () => {
@@ -69,10 +109,12 @@ fastify.post('/api/user/login', async (request: any, reply: any) => {
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
     if (await argon2.verify(results[0].password, body["password"])) {
         const code = results[0].authenticationKey || await generateCode()
-        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID })
+        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID, newUser: results[0].newUser })
 
         if (!results[0].authenticationKey) {
-            await dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
+            await dbQuery('UPDATE users SET authenticationKey=?, newUser=0 WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
+        } else {
+            await dbQuery('UPDATE users SET newUser=0 WHERE emailAddress=?', [body['emailAddress']]).catch(err => console.log(err))
         }
     } else {
         reply.code(400).send('Incorrect username or password.')
@@ -91,8 +133,10 @@ fastify.post('/api/user/register', async (request: any, reply: any) => {
     const password = argon2.hash(body['password'])
 
     const code = await generateCode();
+    const emailCode = await generateEmailCode()
 
-    await dbQuery('INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey) VALUES (?,?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password, code])
+    await dbQuery('INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password, code, emailCode])
+    sendMail(body['emailAddress'], 'Verify your Mail', `Hey ${body['fullName']},<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`)
 
     reply.send(code)
 })
@@ -117,11 +161,11 @@ fastify.get('/api/user/verify', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    let userID = await retrieveID(query['authenticationKey'])
+    const results: Array<any> = await dbQuery('SELECT * from users WHERE authenticationKey=?', [query['authenticationKey']])
 
-    if (!userID) return reply.code(400).send('No user found!')
+    if (!results) return reply.code(400).send('No user found!')
 
-    reply.send(200)
+    reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID, newUser: results[0].newUser })
 })
 
 fastify.get('/api/user/get', async (request: any, reply: any) => {
@@ -432,6 +476,23 @@ fastify.post('/api/invoices/pay', async (request: any, reply: any) => {
     await dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
 
     reply.send()
+})
+
+// EMAIL
+
+fastify.get('/email/verify', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!query || !('code' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT fullName FROM users WHERE verificationCode=?', [query['code']])
+    if (!results.length) return reply.code(400).send('No user found!')
+    await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
+    await reply.sendFile('index.html')
+
+
 })
 
 // Run the server!
