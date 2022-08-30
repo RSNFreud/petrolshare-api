@@ -488,9 +488,9 @@ fastify.get('/email/verify', async (request: any, reply: any) => {
     }
 
     const results = await dbQuery('SELECT fullName FROM users WHERE verificationCode=?', [query['code']])
-    if (!results.length) return reply.code(400).sendFile('views/fail.html')
+    if (!results.length) return reply.code(400).sendFile('fail.html')
     // await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
-    await reply.sendFile('views/success.html')
+    await reply.sendFile('success.html')
 
 
 })
