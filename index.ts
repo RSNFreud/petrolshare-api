@@ -107,6 +107,8 @@ fastify.post('/api/user/login', async (request: any, reply: any) => {
     }
     const results: Array<any> = await dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
+
+    if (!results[0]["verified"]) return reply.code(400).send('Please verify your account!')
     if (await argon2.verify(results[0].password, body["password"])) {
         const code = results[0].authenticationKey || await generateCode()
         reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID, newUser: results[0].newUser })
@@ -490,8 +492,20 @@ fastify.get('/email/verify', async (request: any, reply: any) => {
     if (!results.length) return reply.code(400).sendFile('fail.html')
     await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
     await reply.sendFile('success.html')
+})
 
+fastify.post('/email/resend', async (request: any, reply: any) => {
+    const { body } = request
 
+    if (!body || !('emailAddress' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const emailCode = await generateEmailCode()
+
+    await dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])
+
+    sendMail(body['emailAddress'], 'Verify your Mail', `Hey ${body['fullName']},<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`)
 })
 
 // Run the server!

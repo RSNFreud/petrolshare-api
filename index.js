@@ -209,6 +209,8 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                 results = _b.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send('Incorrect username or password.')];
+                if (!results[0]["verified"])
+                    return [2 /*return*/, reply.code(400).send('Please verify your account!')];
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
                 if (!_b.sent()) return [3 /*break*/, 7];
@@ -772,6 +774,26 @@ fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0
                 return [4 /*yield*/, reply.sendFile('success.html')];
             case 3:
                 _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/email/resend', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, emailCode;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('emailAddress' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, generateEmailCode()];
+            case 1:
+                emailCode = _a.sent();
+                return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
+            case 2:
+                _a.sent();
+                sendMail(body['emailAddress'], 'Verify your Mail', "Hey " + body['fullName'] + ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
                 return [2 /*return*/];
         }
     });
