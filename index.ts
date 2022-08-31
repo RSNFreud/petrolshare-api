@@ -112,10 +112,9 @@ fastify.post('/api/user/login', async (request: any, reply: any) => {
         reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID, newUser: results[0].newUser })
 
         if (!results[0].authenticationKey) {
-            await dbQuery('UPDATE users SET authenticationKey=?, newUser=0 WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
-        } else {
-            await dbQuery('UPDATE users SET newUser=0 WHERE emailAddress=?', [body['emailAddress']]).catch(err => console.log(err))
+            await dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
         }
+
     } else {
         reply.code(400).send('Incorrect username or password.')
     }

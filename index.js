@@ -211,7 +211,7 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Incorrect username or password.')];
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
-                if (!_b.sent()) return [3 /*break*/, 9];
+                if (!_b.sent()) return [3 /*break*/, 7];
                 _a = results[0].authenticationKey;
                 if (_a) return [3 /*break*/, 4];
                 return [4 /*yield*/, generateCode()];
@@ -222,19 +222,15 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                 code = _a;
                 reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID, newUser: results[0].newUser });
                 if (!!results[0].authenticationKey) return [3 /*break*/, 6];
-                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=?, newUser=0 WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
+                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 5:
                 _b.sent();
-                return [3 /*break*/, 8];
-            case 6: return [4 /*yield*/, dbQuery('UPDATE users SET newUser=0 WHERE emailAddress=?', [body['emailAddress']]).catch(function (err) { return console.log(err); })];
+                _b.label = 6;
+            case 6: return [3 /*break*/, 8];
             case 7:
-                _b.sent();
-                _b.label = 8;
-            case 8: return [3 /*break*/, 10];
-            case 9:
                 reply.code(400).send('Incorrect username or password.');
-                _b.label = 10;
-            case 10: return [2 /*return*/];
+                _b.label = 8;
+            case 8: return [2 /*return*/];
         }
     });
 }); });
@@ -769,13 +765,12 @@ fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0
             case 1:
                 results = _a.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).sendFile('fail.html')
-                        // await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
-                    ];
-                // await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
-                return [4 /*yield*/, reply.sendFile('success.html')];
+                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
+                return [4 /*yield*/, dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
             case 2:
-                // await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
+                _a.sent();
+                return [4 /*yield*/, reply.sendFile('success.html')];
+            case 3:
                 _a.sent();
                 return [2 /*return*/];
         }
