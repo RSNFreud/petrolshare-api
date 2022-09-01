@@ -408,6 +408,7 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 
     const results = await dbQuery('SELECT l.distance, s.sessionActive, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
 
+
     if (!results.length) return reply.code(400).send('No logs found')
 
     let distances: any = {}
@@ -424,14 +425,15 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
     const totalDistance: any = Object.values(distances).reduce((a: any, b: any) => a["distance"] + b["distance"])
     const pricePerLiter = body['totalPrice'] / body['litersFilled']
     const litersPerKm = body['litersFilled'] / totalDistance
+    const userID = await retrieveID(body['authenticationKey'])
 
     Object.entries(distances).map(([key, value]: any) => {
-        distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === parseInt(results[0]['userID']), distance: Math.round(value.distance * 100) / 100 }
+        distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 }
     })
 
     await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     retrieveSessionID(await retrieveGroupID(body['authenticationKey']))
-    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID) VALUES (?,?,?,?, ?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance, await retrieveID(body['authenticationKey'])])
+    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID) VALUES (?,?,?,?, ?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey'])])
 
 
     reply.send(res['insertId'])

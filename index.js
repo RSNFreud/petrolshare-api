@@ -637,7 +637,7 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
 }); });
 // PETROL
 fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, litersPerKm, _c, _d, _e, _f, res, _g, _h, _j;
+    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, litersPerKm, userID, _c, _d, _e, _f, res, _g, _h, _j;
     return __generator(this, function (_k) {
         switch (_k.label) {
             case 0:
@@ -664,27 +664,30 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] + b["distance"]; });
                 pricePerLiter = body['totalPrice'] / body['litersFilled'];
                 litersPerKm = body['litersFilled'] / totalDistance;
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 3:
+                userID = _k.sent();
                 Object.entries(distances).map(function (_a) {
                     var key = _a[0], value = _a[1];
-                    distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === parseInt(results[0]['userID']), distance: Math.round(value.distance * 100) / 100 };
+                    distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 };
                 });
                 _c = dbQuery;
                 _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
                 _e = [Date.now()];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
-            case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_k.sent()])]))];
-            case 4:
+            case 4: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_k.sent()])]))];
+            case 5:
                 _k.sent();
                 _f = retrieveSessionID;
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
-            case 5:
+            case 6:
                 _f.apply(void 0, [_k.sent()]);
                 _g = dbQuery;
                 _h = ['INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID) VALUES (?,?,?,?, ?)'];
-                _j = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], totalDistance];
+                _j = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100];
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
-            case 6: return [4 /*yield*/, _g.apply(void 0, _h.concat([_j.concat([_k.sent()])]))];
-            case 7:
+            case 7: return [4 /*yield*/, _g.apply(void 0, _h.concat([_j.concat([_k.sent()])]))];
+            case 8:
                 res = _k.sent();
                 reply.send(res['insertId']);
                 return [2 /*return*/];
