@@ -222,7 +222,7 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                 _b.label = 4;
             case 4:
                 code = _a;
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID, newUser: results[0].newUser });
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID });
                 if (!!results[0].authenticationKey) return [3 /*break*/, 6];
                 return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 5:
@@ -321,7 +321,7 @@ fastify.get('/api/user/verify', function (request, reply) { return __awaiter(voi
                 results = _a.sent();
                 if (!results)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID, newUser: results[0].newUser });
+                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID });
                 return [2 /*return*/];
         }
     });

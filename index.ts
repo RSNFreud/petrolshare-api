@@ -111,7 +111,7 @@ fastify.post('/api/user/login', async (request: any, reply: any) => {
     if (!results[0]["verified"]) return reply.code(400).send('Please verify your account!')
     if (await argon2.verify(results[0].password, body["password"])) {
         const code = results[0].authenticationKey || await generateCode()
-        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID, newUser: results[0].newUser })
+        reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID })
 
         if (!results[0].authenticationKey) {
             await dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
@@ -175,7 +175,7 @@ fastify.get('/api/user/verify', async (request: any, reply: any) => {
 
     if (!results) return reply.code(400).send('No user found!')
 
-    reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID, newUser: results[0].newUser })
+    reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID })
 })
 
 fastify.get('/api/user/get', async (request: any, reply: any) => {
