@@ -270,6 +270,22 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
         }
     });
 }); });
+fastify.post('/api/user/create-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('groupID' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])];
+            case 1:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.post('/api/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results;
     return __generator(this, function (_a) {
@@ -793,7 +809,7 @@ fastify.post('/email/resend', function (request, reply) { return __awaiter(void 
                 return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
             case 2:
                 _a.sent();
-                sendMail(body['emailAddress'], 'Verify your Mail', "Hey " + body['fullName'] + ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
+                sendMail(body['emailAddress'], 'Verify your Mail', "Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
                 return [2 /*return*/];
         }
     });

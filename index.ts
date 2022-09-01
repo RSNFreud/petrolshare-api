@@ -142,6 +142,15 @@ fastify.post('/api/user/register', async (request: any, reply: any) => {
     reply.send(code)
 })
 
+fastify.post('/api/user/create-group', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('groupID' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])
+})
+
 fastify.post('/api/user/change-group', async (request: any, reply: any) => {
     const { body } = request
 
@@ -505,7 +514,7 @@ fastify.post('/email/resend', async (request: any, reply: any) => {
 
     await dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])
 
-    sendMail(body['emailAddress'], 'Verify your Mail', `Hey ${body['fullName']},<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`)
+    sendMail(body['emailAddress'], 'Verify your Mail', `Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`)
 })
 
 // Run the server!
