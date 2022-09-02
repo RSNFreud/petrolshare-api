@@ -75,7 +75,7 @@ var conn = mysql_1.default.createConnection({
 });
 conn.connect();
 var sendMail = function (address, subject, message) { return __awaiter(void 0, void 0, void 0, function () {
-    var transporter, info;
+    var transporter, info, err_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -88,16 +88,24 @@ var sendMail = function (address, subject, message) { return __awaiter(void 0, v
                         pass: process.env.EMAIL_PASSWORD,
                     },
                 });
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
                 return [4 /*yield*/, transporter.sendMail({
                         from: '"PetrolShare" <petrolshare@freud-online.co.uk>',
                         to: address,
                         subject: subject,
                         html: message,
                     })];
-            case 1:
+            case 2:
                 info = _a.sent();
                 console.log("Message sent: %s", info.messageId);
-                return [2 /*return*/];
+                return [3 /*break*/, 4];
+            case 3:
+                err_1 = _a.sent();
+                console.log('Google blocked email sending!');
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
         }
     });
 }); };
@@ -402,7 +410,7 @@ fastify.post('/api/distance/reset', function (request, reply) { return __awaiter
     });
 }); });
 fastify.post('/api/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, log, sessionID, err_1;
+    var body, results, log, sessionID, err_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -429,8 +437,8 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
                 _a.sent();
                 return [3 /*break*/, 7];
             case 6:
-                err_1 = _a.sent();
-                console.log(err_1);
+                err_2 = _a.sent();
+                console.log(err_2);
                 return [3 /*break*/, 7];
             case 7:
                 reply.code(200);
@@ -819,7 +827,7 @@ fastify.post('/email/resend', function (request, reply) { return __awaiter(void 
 }); });
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var err_2;
+    var err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -830,8 +838,8 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.log('Listening to traffic on 3434');
                 return [3 /*break*/, 3];
             case 2:
-                err_2 = _a.sent();
-                fastify.log.error(err_2);
+                err_3 = _a.sent();
+                fastify.log.error(err_3);
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];

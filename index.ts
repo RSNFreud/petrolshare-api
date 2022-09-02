@@ -29,15 +29,18 @@ const sendMail = async (address: string, subject: string, message: string) => {
             pass: process.env.EMAIL_PASSWORD,
         },
     });
+    try {
+        let info = await transporter.sendMail({
+            from: '"PetrolShare" <petrolshare@freud-online.co.uk>',
+            to: address,
+            subject: subject,
+            html: message,
+        });
 
-    let info = await transporter.sendMail({
-        from: '"PetrolShare" <petrolshare@freud-online.co.uk>',
-        to: address,
-        subject: subject,
-        html: message,
-    });
-
-    console.log("Message sent: %s", info.messageId);
+        console.log("Message sent: %s", info.messageId);
+    } catch (err) {
+        console.log('Google blocked email sending!');
+    }
 }
 
 async function dbQuery(query: string, parameters?: Array<any>) {
