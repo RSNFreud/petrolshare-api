@@ -405,7 +405,7 @@ fastify.post('/api/preset/delete', async (request: any, reply: any) => {
 fastify.post('/api/petrol/add', async (request: any, reply: any) => {
     const { body } = request
 
-    if (!body || !('totalPrice' in body) || !('litersFilled' in body) || !('authenticationKey' in body)) {
+    if (!body || !('totalPrice' in body) || !('litersFilled' in body) || !('authenticationKey' in body) || !('odometer' in body)) {
         return reply.code(400).send('Missing required field!')
     }
 
@@ -435,8 +435,10 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
     })
 
     await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
-    retrieveSessionID(await retrieveGroupID(body['authenticationKey']))
-    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID) VALUES (?,?,?,?, ?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey'])])
+    await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive, startOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
+    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
+
+    console.log(res);
 
 
     reply.send(res['insertId'])
