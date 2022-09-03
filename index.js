@@ -645,7 +645,7 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
 }); });
 // PETROL
 fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, litersPerKm, userID, _c, _d, _e, _f, _g, _h, res, _j, _k, _l;
+    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, totalCarDistance, litersPerKm, userID, _c, _d, _e, _f, _g, _h, res, _j, _k, _l;
     return __generator(this, function (_m) {
         switch (_m.label) {
             case 0:
@@ -654,7 +654,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
+                _b = ['SELECT l.distance, s.sessionActive, s.startOdometer, s.endOdometer, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_m.sent()]]))];
             case 2:
@@ -671,7 +671,8 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 }
                 totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] + b["distance"]; });
                 pricePerLiter = body['totalPrice'] / body['litersFilled'];
-                litersPerKm = body['litersFilled'] / totalDistance;
+                totalCarDistance = results[0]['endOdometer'] - results[0]['startOdometer'];
+                litersPerKm = body['litersFilled'] / (totalCarDistance > 0 ? totalCarDistance : totalDistance);
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 3:
                 userID = _m.sent();
@@ -679,6 +680,9 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     var key = _a[0], value = _a[1];
                     distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 };
                 });
+                if (totalCarDistance > 0 && totalCarDistance !== totalDistance) {
+                    distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance };
+                }
                 _c = dbQuery;
                 _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
                 _e = [Date.now()];
@@ -700,7 +704,6 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
             case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([_m.sent(), body['litersFilled']])]))];
             case 9:
                 res = _m.sent();
-                console.log(res);
                 reply.send(res['insertId']);
                 return [2 /*return*/];
         }
@@ -723,7 +726,7 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
                     return [2 /*return*/, reply.code(400).send('No user found!')];
                 if (!!('invoiceID' in query)) return [3 /*break*/, 4];
                 _a = dbQuery;
-                _b = ['SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=?'];
+                _b = ['SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? SORT BY s.sessionEnd DESC'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_f.sent()]]))];
             case 3:
