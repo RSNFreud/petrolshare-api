@@ -726,7 +726,7 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
                     return [2 /*return*/, reply.code(400).send('No user found!')];
                 if (!!('invoiceID' in query)) return [3 /*break*/, 4];
                 _a = dbQuery;
-                _b = ['SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? SORT BY s.sessionEnd DESC'];
+                _b = ['SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_f.sent()]]))];
             case 3:

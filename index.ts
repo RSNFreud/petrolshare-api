@@ -459,7 +459,7 @@ fastify.get('/api/invoices/get', async (request: any, reply: any) => {
     if (!userID) return reply.code(400).send('No user found!')
 
     if (!('invoiceID' in query)) {
-        const results = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? SORT BY s.sessionEnd DESC', [await retrieveGroupID(query['authenticationKey'])])
+        const results = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC', [await retrieveGroupID(query['authenticationKey'])])
         if (!results.length) return reply.code(400).send('There are no invoices in that group!')
         return reply.send(results)
     }
