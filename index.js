@@ -654,12 +654,12 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive, s.startOdometer, s.endOdometer, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
+                _b = ['SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_m.sent()]]))];
             case 2:
                 results = _m.sent();
-                if (!results.length)
+                if (!results || !results.length)
                     return [2 /*return*/, reply.code(400).send('No logs found')];
                 distances = {};
                 for (i = 0; i < results.length; i++) {
@@ -671,7 +671,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 }
                 totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] + b["distance"]; });
                 pricePerLiter = body['totalPrice'] / body['litersFilled'];
-                totalCarDistance = results[0]['endOdometer'] - results[0]['startOdometer'];
+                totalCarDistance = body['odometer'] - results[0]['initialOdometer'];
                 litersPerKm = body['litersFilled'] / (totalCarDistance > 0 ? totalCarDistance : totalDistance);
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 3:
@@ -691,7 +691,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
             case 5:
                 _m.sent();
                 _f = dbQuery;
-                _g = ['INSERT INTO sessions (sessionStart, groupID, sessionActive, startOdometer) VALUES (?,?,?,?)'];
+                _g = ['INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)'];
                 _h = [Date.now()];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 6: return [4 /*yield*/, _f.apply(void 0, _g.concat([_h.concat([_m.sent(), true, body['odometer']])]))];

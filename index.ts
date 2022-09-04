@@ -409,10 +409,9 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.startOdometer, s.endOdometer, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
+    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
 
-
-    if (!results.length) return reply.code(400).send('No logs found')
+    if (!results || !results.length) return reply.code(400).send('No logs found')
 
     let distances: any = {}
 
@@ -427,7 +426,7 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 
     const totalDistance: any = Object.values(distances).reduce((a: any, b: any) => a["distance"] + b["distance"])
     const pricePerLiter = body['totalPrice'] / body['litersFilled']
-    const totalCarDistance = results[0]['endOdometer'] - results[0]['startOdometer']
+    const totalCarDistance = body['odometer'] - results[0]['initialOdometer']
 
     const litersPerKm = body['litersFilled'] / (totalCarDistance > 0 ? totalCarDistance : totalDistance)
     const userID = await retrieveID(body['authenticationKey'])
@@ -441,7 +440,7 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 
 
     await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
-    await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive, startOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
+    await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
     const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
 
     reply.send(res['insertId'])
