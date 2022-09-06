@@ -428,16 +428,15 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
     const pricePerLiter = body['totalPrice'] / body['litersFilled']
     const totalCarDistance = body['odometer'] - results[0]['initialOdometer']
 
-    const litersPerKm = body['litersFilled'] / (totalCarDistance > 0 ? totalCarDistance : totalDistance)
+    const litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] ? totalCarDistance : totalDistance)
     const userID = await retrieveID(body['authenticationKey'])
 
     Object.entries(distances).map(([key, value]: any) => {
         distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 }
     })
-    if (totalCarDistance > 0 && totalCarDistance !== totalDistance) {
+    if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance) {
         distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance }
     }
-
 
     await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])

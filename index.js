@@ -672,7 +672,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] + b["distance"]; });
                 pricePerLiter = body['totalPrice'] / body['litersFilled'];
                 totalCarDistance = body['odometer'] - results[0]['initialOdometer'];
-                litersPerKm = body['litersFilled'] / (totalCarDistance > 0 ? totalCarDistance : totalDistance);
+                litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] ? totalCarDistance : totalDistance);
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 3:
                 userID = _m.sent();
@@ -680,7 +680,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     var key = _a[0], value = _a[1];
                     distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 };
                 });
-                if (totalCarDistance > 0 && totalCarDistance !== totalDistance) {
+                if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance) {
                     distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance };
                 }
                 _c = dbQuery;
