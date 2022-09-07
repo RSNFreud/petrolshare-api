@@ -315,6 +315,43 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
         }
     });
 }); });
+fastify.post('/api/user/change-email', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, emailCode, results, _a, _b, err_2;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('newEmail' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, generateEmailCode()];
+            case 1:
+                emailCode = _c.sent();
+                _a = dbQuery;
+                _b = ['SELECT emailAddress FROM users WHERE userID=?'];
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+            case 3:
+                results = _c.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
+                _c.label = 4;
+            case 4:
+                _c.trys.push([4, 6, , 7]);
+                return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?', [emailCode, body['newEmail'], body['authenticationKey']])];
+            case 5:
+                _c.sent();
+                return [3 /*break*/, 7];
+            case 6:
+                err_2 = _c.sent();
+                console.log(err_2);
+                return [3 /*break*/, 7];
+            case 7:
+                sendMail(body['newEmail'], 'PetrolShare - Change Email Address', "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.get('/api/user/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
     return __generator(this, function (_a) {
@@ -410,7 +447,7 @@ fastify.post('/api/distance/reset', function (request, reply) { return __awaiter
     });
 }); });
 fastify.post('/api/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, log, sessionID, err_2;
+    var body, results, log, sessionID, err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -437,8 +474,8 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
                 _a.sent();
                 return [3 /*break*/, 7];
             case 6:
-                err_2 = _a.sent();
-                console.log(err_2);
+                err_3 = _a.sent();
+                console.log(err_3);
                 return [3 /*break*/, 7];
             case 7:
                 reply.code(200);
@@ -797,16 +834,22 @@ fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0
                 if (!query || !('code' in query)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE verificationCode=?', [query['code']])];
+                return [4 /*yield*/, dbQuery('SELECT fullName, verified, tempEmail FROM users WHERE verificationCode=?', [query['code']])];
             case 1:
                 results = _a.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).sendFile('fail.html')];
-                return [4 /*yield*/, dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
+                if (!(results[0].verified && results[0].tempEmail)) return [3 /*break*/, 3];
+                return [4 /*yield*/, dbQuery('UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?', [results[0].tempEmail, query['code']])];
             case 2:
                 _a.sent();
-                return [4 /*yield*/, reply.sendFile('success.html')];
-            case 3:
+                return [3 /*break*/, 5];
+            case 3: return [4 /*yield*/, dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
+            case 4:
+                _a.sent();
+                _a.label = 5;
+            case 5: return [4 /*yield*/, reply.sendFile('success.html')];
+            case 6:
                 _a.sent();
                 return [2 /*return*/];
         }
@@ -834,7 +877,7 @@ fastify.post('/email/resend', function (request, reply) { return __awaiter(void 
 }); });
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var err_3;
+    var err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -845,8 +888,8 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.log('Listening to traffic on 3434');
                 return [3 /*break*/, 3];
             case 2:
-                err_3 = _a.sent();
-                fastify.log.error(err_3);
+                err_4 = _a.sent();
+                fastify.log.error(err_4);
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];

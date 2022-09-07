@@ -167,6 +167,25 @@ fastify.post('/api/user/change-group', async (request: any, reply: any) => {
 
 })
 
+fastify.post('/api/user/change-email', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('newEmail' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    const emailCode = await generateEmailCode();
+    const results = await dbQuery('SELECT emailAddress FROM users WHERE userID=?', [await retrieveID(body['authenticationKey'])])
+    if (!results.length) return reply.code(400).send("There is no user with that ID")
+    try {
+        await dbQuery('UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?', [emailCode, body['newEmail'], body['authenticationKey']])
+    } catch (err) {
+        console.log(err);
+
+    }
+
+    sendMail(body['newEmail'], 'PetrolShare - Change Email Address', `Hi!<br><br>We have received a request to change your email to this address. Please click <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="_blank">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team`)
+})
+
 fastify.get('/api/user/verify', async (request: any, reply: any) => {
     const { query } = request
 
@@ -505,9 +524,13 @@ fastify.get('/email/verify', async (request: any, reply: any) => {
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT fullName FROM users WHERE verificationCode=?', [query['code']])
+    const results = await dbQuery('SELECT fullName, verified, tempEmail FROM users WHERE verificationCode=?', [query['code']])
     if (!results.length) return reply.code(400).sendFile('fail.html')
-    await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
+
+    if (results[0].verified && results[0].tempEmail)
+        await dbQuery('UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?', [results[0].tempEmail, query['code']])
+    else
+        await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
     await reply.sendFile('success.html')
 })
 
