@@ -316,7 +316,7 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
     });
 }); });
 fastify.post('/api/user/change-email', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, emailCode, results, _a, _b, err_2;
+    var body, emailCode, results, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
@@ -335,19 +335,59 @@ fastify.post('/api/user/change-email', function (request, reply) { return __awai
                 results = _c.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                _c.label = 4;
-            case 4:
-                _c.trys.push([4, 6, , 7]);
                 return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?', [emailCode, body['newEmail'], body['authenticationKey']])];
-            case 5:
+            case 4:
                 _c.sent();
-                return [3 /*break*/, 7];
-            case 6:
-                err_2 = _c.sent();
-                console.log(err_2);
-                return [3 /*break*/, 7];
-            case 7:
                 sendMail(body['newEmail'], 'PetrolShare - Change Email Address', "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/api/user/change-name', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, results, _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('newName' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                _a = dbQuery;
+                _b = ['SELECT fullName FROM users WHERE userID=?'];
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+            case 2:
+                results = _c.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
+                return [4 /*yield*/, dbQuery('UPDATE users SET fullName=? WHERE authenticationKey=?', [body['newName'], body['authenticationKey']])];
+            case 3:
+                _c.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/api/user/change-password', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, results, _a, _b, password;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('newPassword' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                _a = dbQuery;
+                _b = ['SELECT fullName FROM users WHERE userID=?'];
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+            case 2:
+                results = _c.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
+                password = argon2_1.default.hash(body['newPassword']);
+                return [4 /*yield*/, dbQuery('UPDATE users SET password=? WHERE authenticationKey=?', [password, body['authenticationKey']])];
+            case 3:
+                _c.sent();
                 return [2 /*return*/];
         }
     });
@@ -447,7 +487,7 @@ fastify.post('/api/distance/reset', function (request, reply) { return __awaiter
     });
 }); });
 fastify.post('/api/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, log, sessionID, err_3;
+    var body, results, log, sessionID, err_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -474,8 +514,8 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
                 _a.sent();
                 return [3 /*break*/, 7];
             case 6:
-                err_3 = _a.sent();
-                console.log(err_3);
+                err_2 = _a.sent();
+                console.log(err_2);
                 return [3 /*break*/, 7];
             case 7:
                 reply.code(200);
@@ -877,7 +917,7 @@ fastify.post('/email/resend', function (request, reply) { return __awaiter(void 
 }); });
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var err_4;
+    var err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -888,8 +928,8 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.log('Listening to traffic on 3434');
                 return [3 /*break*/, 3];
             case 2:
-                err_4 = _a.sent();
-                fastify.log.error(err_4);
+                err_3 = _a.sent();
+                fastify.log.error(err_3);
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];

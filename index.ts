@@ -176,14 +176,35 @@ fastify.post('/api/user/change-email', async (request: any, reply: any) => {
     const emailCode = await generateEmailCode();
     const results = await dbQuery('SELECT emailAddress FROM users WHERE userID=?', [await retrieveID(body['authenticationKey'])])
     if (!results.length) return reply.code(400).send("There is no user with that ID")
-    try {
-        await dbQuery('UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?', [emailCode, body['newEmail'], body['authenticationKey']])
-    } catch (err) {
-        console.log(err);
-
-    }
+    await dbQuery('UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?', [emailCode, body['newEmail'], body['authenticationKey']])
 
     sendMail(body['newEmail'], 'PetrolShare - Change Email Address', `Hi!<br><br>We have received a request to change your email to this address. Please click <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="_blank">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team`)
+})
+
+fastify.post('/api/user/change-name', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('newName' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT fullName FROM users WHERE userID=?', [await retrieveID(body['authenticationKey'])])
+    if (!results.length) return reply.code(400).send("There is no user with that ID")
+    await dbQuery('UPDATE users SET fullName=? WHERE authenticationKey=?', [body['newName'], body['authenticationKey']])
+})
+
+fastify.post('/api/user/change-password', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('newPassword' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT fullName FROM users WHERE userID=?', [await retrieveID(body['authenticationKey'])])
+    if (!results.length) return reply.code(400).send("There is no user with that ID")
+    const password = argon2.hash(body['newPassword'])
+
+    await dbQuery('UPDATE users SET password=? WHERE authenticationKey=?', [password, body['authenticationKey']])
 })
 
 fastify.get('/api/user/verify', async (request: any, reply: any) => {
