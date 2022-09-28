@@ -384,9 +384,11 @@ fastify.post('/api/user/change-password', function (request, reply) { return __a
                 results = _c.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                password = argon2_1.default.hash(body['newPassword']);
-                return [4 /*yield*/, dbQuery('UPDATE users SET password=? WHERE authenticationKey=?', [password, body['authenticationKey']])];
+                return [4 /*yield*/, argon2_1.default.hash(body['newPassword'])];
             case 3:
+                password = _c.sent();
+                return [4 /*yield*/, dbQuery('UPDATE users SET password=?, authenticationKey=null WHERE authenticationKey=?', [password, body['authenticationKey']])];
+            case 4:
                 _c.sent();
                 return [2 /*return*/];
         }

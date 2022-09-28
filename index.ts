@@ -202,9 +202,9 @@ fastify.post('/api/user/change-password', async (request: any, reply: any) => {
 
     const results = await dbQuery('SELECT fullName FROM users WHERE userID=?', [await retrieveID(body['authenticationKey'])])
     if (!results.length) return reply.code(400).send("There is no user with that ID")
-    const password = argon2.hash(body['newPassword'])
+    const password = await argon2.hash(body['newPassword'])
 
-    await dbQuery('UPDATE users SET password=? WHERE authenticationKey=?', [password, body['authenticationKey']])
+    await dbQuery('UPDATE users SET password=?, authenticationKey=null WHERE authenticationKey=?', [password, body['authenticationKey']])
 })
 
 fastify.get('/api/user/verify', async (request: any, reply: any) => {
