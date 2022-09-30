@@ -474,7 +474,7 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
     Object.entries(distances).map(([key, value]: any) => {
         distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 }
     })
-    if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance) {
+    if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
         distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance }
     }
 
