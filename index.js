@@ -278,7 +278,7 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
         }
     });
 }); });
-fastify.post('/api/user/create-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post('/api/group/create', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -290,6 +290,50 @@ fastify.post('/api/user/create-group', function (request, reply) { return __awai
                 return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])];
             case 1:
                 _a.sent();
+                return [4 /*yield*/, dbQuery('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])];
+            case 2:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/api/group/update', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, groupID;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body) || !('distance' in body) || !('petrol' in body) || !('currency' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 1:
+                groupID = _a.sent();
+                return [4 /*yield*/, dbQuery('UPDATE groups SET distance=?, petrol=?, currency=? WHERE groupID=?', [body['distance'], body['petrol'], body['currency'], groupID])];
+            case 2:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, groupID, res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 1:
+                groupID = _a.sent();
+                return [4 /*yield*/, dbQuery('SELECT * FROM groups WHERE groupID=?', [groupID])];
+            case 2:
+                res = _a.sent();
+                if (!res)
+                    return [2 /*return*/];
+                reply.send(res[0]);
                 return [2 /*return*/];
         }
     });

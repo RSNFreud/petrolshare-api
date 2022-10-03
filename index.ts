@@ -145,13 +145,40 @@ fastify.post('/api/user/register', async (request: any, reply: any) => {
     reply.send(code)
 })
 
-fastify.post('/api/user/create-group', async (request: any, reply: any) => {
+fastify.post('/api/group/create', async (request: any, reply: any) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('groupID' in body)) {
         return reply.code(400).send('Missing required field!')
     }
     await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])
+    await dbQuery('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])
+})
+
+fastify.post('/api/group/update', async (request: any, reply: any) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body) || !('distance' in body) || !('petrol' in body) || !('currency' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const groupID = await retrieveGroupID(body['authenticationKey'])
+
+    await dbQuery('UPDATE groups SET distance=?, petrol=?, currency=? WHERE groupID=?', [body['distance'], body['petrol'], body['currency'], groupID])
+})
+
+fastify.get('/api/group/get', async (request: any, reply: any) => {
+    const { query } = request
+
+    if (!('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const groupID = await retrieveGroupID(query['authenticationKey'])
+
+    const res = await dbQuery('SELECT * FROM groups WHERE groupID=?', [groupID])
+    if (!res) return
+    reply.send(res[0])
 })
 
 fastify.post('/api/user/change-group', async (request: any, reply: any) => {
