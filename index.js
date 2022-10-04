@@ -483,9 +483,9 @@ fastify.get('/api/user/get', function (request, reply) { return __awaiter(void 0
 }); });
 // DISTANCE
 fastify.get('/api/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, userID, results, total;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var query, userID, results, _a, _b, _c, total;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 query = request.query;
                 if (!('authenticationKey' in query)) {
@@ -493,12 +493,16 @@ fastify.get('/api/distance/get', function (request, reply) { return __awaiter(vo
                 }
                 return [4 /*yield*/, retrieveID(query['authenticationKey'])];
             case 1:
-                userID = _a.sent();
+                userID = _d.sent();
                 if (!userID)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])];
-            case 2:
-                results = _a.sent();
+                _a = dbQuery;
+                _b = ['SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=?'];
+                _c = [userID];
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
+            case 3:
+                results = _d.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.send(0)];
                 total = 0;

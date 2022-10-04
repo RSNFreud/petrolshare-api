@@ -277,7 +277,7 @@ fastify.get('/api/distance/get', async (request: any, reply: any) => {
     const userID = await retrieveID(query['authenticationKey'])
     if (!userID) return reply.code(400).send('No user found!')
 
-    const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1', [userID])
+    const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=?', [userID, await retrieveGroupID(query['authenticationKey'])])
 
     if (!results.length) return reply.send(0)
 
