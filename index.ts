@@ -101,6 +101,12 @@ const retrieveID = async (authenticationKey: string) => {
     return res[0].userID
 }
 
+const retrieveName = async (userID: string) => {
+    const res = await dbQuery('SELECT fullName FROM users WHERE userID=?', [userID])
+    if (!res.length) return ""
+    return res[0].fullName as string
+}
+
 // USER
 fastify.post('/api/user/login', async (request: any, reply: any) => {
     const { body } = request
@@ -480,25 +486,34 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 
     if (!results || !results.length) return reply.code(400).send('No logs found')
 
-    let distances: any = {}
+    let distances: { [key: string]: { distance: number, fullName: string, paymentDue?: number, paid?: boolean } } = {}
 
     for (let i = 0; i < results.length; i++) {
-        const e = results[i];
+        const e: {
+            distance: string,
+            sessionActive: number,
+            initialOdometer: number,
+            sessionID: number,
+            fullName: string,
+            userID: string
+        } = results[i];
+
 
         if (!(e.userID in distances)) {
             distances[e.userID] = { distance: 0, fullName: e["fullName"] }
         }
-        distances[e.userID] = { distance: parseFloat(distances[e.userID].distance) + parseFloat(e.distance), fullName: e["fullName"] }
+        distances[e.userID] = { distance: distances[e.userID].distance + parseFloat(e.distance), fullName: e["fullName"] }
     }
 
-    const totalDistance: any = Object.values(distances).reduce((a: any, b: any) => a["distance"] + b["distance"])
+    const totalDistance = Object.values(distances).reduce((a: any, b: any) => a["distance"] || 0 + b["distance"], 0)
+
     const pricePerLiter = body['totalPrice'] / body['litersFilled']
     const totalCarDistance = body['odometer'] - results[0]['initialOdometer']
 
-    const litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] ? totalCarDistance : totalDistance)
+    const litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] && totalCarDistance > 0 ? totalCarDistance : totalDistance)
     const userID = await retrieveID(body['authenticationKey'])
 
-    Object.entries(distances).map(([key, value]: any) => {
+    Object.entries(distances).map(([key, value]) => {
         distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 }
     })
     if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
@@ -507,6 +522,7 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
 
     await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
+
     const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
 
     reply.send(res['insertId'])
@@ -529,9 +545,28 @@ fastify.get('/api/invoices/get', async (request: any, reply: any) => {
         return reply.send(results)
     }
 
-    const results = await dbQuery('SELECT u.fullName, i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])
+    let results = await dbQuery('SELECT u.fullName, i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])
     if (!results.length) return reply.code(400).send('There are no invoices with that ID!')
 
+    for (let i = 0; i < results.length; i++) {
+        const e: {
+            fullName: string,
+            invoiceData: string,
+            totalDistance: string,
+            sessionEnd: string,
+            totalPrice: string
+        } = results[i];
+        let data: { [key: string]: { distance: number, fullName: string, paymentDue?: number, paid?: boolean } } = JSON.parse(e.invoiceData)
+
+        for (let i = 0; i < Object.keys(data).length; i++) {
+            let key = Object.keys(data)[i];
+            const name = await retrieveName(key)
+            if (name) data[key]["fullName"] = name
+            e.invoiceData = JSON.stringify(data)
+        }
+    }
+
+    await dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [results[0].invoiceData, query["invoiceID"]])
     reply.send(results[0])
 })
 

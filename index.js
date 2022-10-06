@@ -202,6 +202,19 @@ var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0,
         }
     });
 }); };
+var retrieveName = function (userID) { return __awaiter(void 0, void 0, void 0, function () {
+    var res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE userID=?', [userID])];
+            case 1:
+                res = _a.sent();
+                if (!res.length)
+                    return [2 /*return*/, ""];
+                return [2 /*return*/, res[0].fullName];
+        }
+    });
+}); };
 // USER
 fastify.post('/api/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, code, _a;
@@ -794,12 +807,12 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     if (!(e.userID in distances)) {
                         distances[e.userID] = { distance: 0, fullName: e["fullName"] };
                     }
-                    distances[e.userID] = { distance: parseFloat(distances[e.userID].distance) + parseFloat(e.distance), fullName: e["fullName"] };
+                    distances[e.userID] = { distance: distances[e.userID].distance + parseFloat(e.distance), fullName: e["fullName"] };
                 }
-                totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] + b["distance"]; });
+                totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] || 0 + b["distance"]; }, 0);
                 pricePerLiter = body['totalPrice'] / body['litersFilled'];
                 totalCarDistance = body['odometer'] - results[0]['initialOdometer'];
-                litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] ? totalCarDistance : totalDistance);
+                litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] && totalCarDistance > 0 ? totalCarDistance : totalDistance);
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 3:
                 userID = _m.sent();
@@ -838,7 +851,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
 }); });
 // INVOICES
 fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, userID, results_1, _a, _b, results, _c, _d, _e;
+    var query, userID, results_1, _a, _b, results, _c, _d, _e, i, e, data, i_1, key, name_1;
     return __generator(this, function (_f) {
         switch (_f.label) {
             case 0:
@@ -871,6 +884,33 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
                 results = _f.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
+                i = 0;
+                _f.label = 7;
+            case 7:
+                if (!(i < results.length)) return [3 /*break*/, 12];
+                e = results[i];
+                data = JSON.parse(e.invoiceData);
+                i_1 = 0;
+                _f.label = 8;
+            case 8:
+                if (!(i_1 < Object.keys(data).length)) return [3 /*break*/, 11];
+                key = Object.keys(data)[i_1];
+                return [4 /*yield*/, retrieveName(key)];
+            case 9:
+                name_1 = _f.sent();
+                if (name_1)
+                    data[key]["fullName"] = name_1;
+                e.invoiceData = JSON.stringify(data);
+                _f.label = 10;
+            case 10:
+                i_1++;
+                return [3 /*break*/, 8];
+            case 11:
+                i++;
+                return [3 /*break*/, 7];
+            case 12: return [4 /*yield*/, dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [results[0].invoiceData, query["invoiceID"]])];
+            case 13:
+                _f.sent();
                 reply.send(results[0]);
                 return [2 /*return*/];
         }
