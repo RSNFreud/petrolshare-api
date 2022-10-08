@@ -4,6 +4,7 @@ require('dotenv').config()
 import argon2 from 'argon2';
 import cors from '@fastify/cors'
 import nodemailer from "nodemailer";
+import Expo from 'expo-server-sdk';
 
 const fastify: FastifyInstance = Fastify({})
 fastify.register(require('@fastify/static'), {
@@ -557,7 +558,7 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
+    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
 
     if (!results || !results.length) return reply.code(400).send('No logs found')
 
@@ -598,8 +599,10 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
     await dbInsert('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     await dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
 
-    const res: any = await dbInsert('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
 
+
+    const res: any = await dbInsert('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
+    sendNotification(results.filter(e => e.userID !== userID), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] })
     reply.send(res['insertId'])
 })
 
@@ -721,6 +724,52 @@ fastify.get<{ Querystring: { code: string } }>('/email/reset-password', async (r
 
     await reply.view('reset-password.ejs', { password: password })
 })
+
+fastify.get<{ Querystring: { code: string } }>('/test', async (request, reply) => {
+
+
+    const results = await dbQuery('SELECT notificationKey FROM users WHERE notificationKey IS NOT NULL')
+    sendNotification(results, 'testing!', { screenName: 'Invoices', invoiceID: 417 })
+})
+
+// NOTIFY
+
+const sendNotification = async (notifKeys: Array<any>, message: string, route: { screenName: string, invoiceID?: number }) => {
+    let expo = new Expo({})
+
+    if (!notifKeys) return
+    let messages = [];
+
+    for (let pushToken of notifKeys) {
+        if (!pushToken["notificationKey"]) continue
+        // // Check that all your push tokens appear to be valid Expo push tokens
+        if (!Expo.isExpoPushToken(pushToken["notificationKey"])) {
+            console.error(`Push token ${pushToken["notificationKey"]} is not a valid Expo push token`);
+            continue;
+        }
+
+        // // Construct a message (see https://docs.expo.io/push-notifications/sending-notifications/)
+        messages.push({
+            to: pushToken["notificationKey"],
+            body: message,
+            data: { route: route.screenName, invoiceID: route.invoiceID },
+        })
+    }
+    if (!messages) return
+    let chunks = expo.chunkPushNotifications(messages);
+    let tickets = [];
+    (async () => {
+        for (let chunk of chunks) {
+            try {
+                let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+                tickets.push(...ticketChunk);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    })();
+}
+
 
 // Run the server!
 const start = async () => {

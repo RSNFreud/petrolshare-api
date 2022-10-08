@@ -65,6 +65,7 @@ require('dotenv').config();
 var argon2_1 = __importDefault(require("argon2"));
 var cors_1 = __importDefault(require("@fastify/cors"));
 var nodemailer_1 = __importDefault(require("nodemailer"));
+var expo_server_sdk_1 = __importDefault(require("expo-server-sdk"));
 var fastify = (0, fastify_1.default)({});
 fastify.register(require('@fastify/static'), {
     root: __dirname,
@@ -886,7 +887,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
+                _b = ['SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_m.sent()]]))];
             case 2:
@@ -936,6 +937,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
             case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([_m.sent(), body['litersFilled']])]))];
             case 9:
                 res = _m.sent();
+                sendNotification(results.filter(function (e) { return e.userID !== userID; }), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] });
                 reply.send(res['insertId']);
                 return [2 /*return*/];
         }
@@ -1125,6 +1127,78 @@ fastify.get('/email/reset-password', function (request, reply) { return __awaite
         }
     });
 }); });
+fastify.get('/test', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT notificationKey FROM users WHERE notificationKey IS NOT NULL')];
+            case 1:
+                results = _a.sent();
+                sendNotification(results, 'testing!', { screenName: 'Invoices', invoiceID: 417 });
+                return [2 /*return*/];
+        }
+    });
+}); });
+// NOTIFY
+var sendNotification = function (notifKeys, message, route) { return __awaiter(void 0, void 0, void 0, function () {
+    var expo, messages, _i, notifKeys_1, pushToken, chunks, tickets;
+    return __generator(this, function (_a) {
+        expo = new expo_server_sdk_1.default({});
+        if (!notifKeys)
+            return [2 /*return*/];
+        messages = [];
+        for (_i = 0, notifKeys_1 = notifKeys; _i < notifKeys_1.length; _i++) {
+            pushToken = notifKeys_1[_i];
+            if (!pushToken["notificationKey"])
+                continue;
+            // // Check that all your push tokens appear to be valid Expo push tokens
+            if (!expo_server_sdk_1.default.isExpoPushToken(pushToken["notificationKey"])) {
+                console.error("Push token " + pushToken["notificationKey"] + " is not a valid Expo push token");
+                continue;
+            }
+            // // Construct a message (see https://docs.expo.io/push-notifications/sending-notifications/)
+            messages.push({
+                to: pushToken["notificationKey"],
+                body: message,
+                data: { route: route.screenName, invoiceID: route.invoiceID },
+            });
+        }
+        if (!messages)
+            return [2 /*return*/];
+        chunks = expo.chunkPushNotifications(messages);
+        tickets = [];
+        (function () { return __awaiter(void 0, void 0, void 0, function () {
+            var _i, chunks_1, chunk, ticketChunk, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _i = 0, chunks_1 = chunks;
+                        _a.label = 1;
+                    case 1:
+                        if (!(_i < chunks_1.length)) return [3 /*break*/, 6];
+                        chunk = chunks_1[_i];
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, expo.sendPushNotificationsAsync(chunk)];
+                    case 3:
+                        ticketChunk = _a.sent();
+                        tickets.push.apply(tickets, ticketChunk);
+                        return [3 /*break*/, 5];
+                    case 4:
+                        error_1 = _a.sent();
+                        console.error(error_1);
+                        return [3 /*break*/, 5];
+                    case 5:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        }); })();
+        return [2 /*return*/];
+    });
+}); };
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
     var err_3;
