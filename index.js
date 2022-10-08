@@ -292,6 +292,38 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
         }
     });
 }); });
+fastify.post('/api/notify/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('emailAddress' in body) || !('notificationToken' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbInsert('UPDATE users SET notificationKey=? WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])];
+            case 1:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/api/notify/deregister', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('emailAddress' in body) || !('notificationToken' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbInsert('UPDATE users SET notificationKey=null WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])];
+            case 1:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.post('/api/user/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, password, code, emailCode, _a, _b, _c;
     return __generator(this, function (_d) {
