@@ -2,9 +2,12 @@
   "dependencies": {
     "@fastify/cors": "^8.1.0",
     "@fastify/static": "^6.5.0",
+    "@fastify/view": "^7.1.0",
     "argon2": "^0.28.7",
     "dotenv": "^16.0.1",
+    "ejs": "^3.1.8",
     "fastify": "^4.4.0",
+    "knex": "^2.3.0",
     "mysql": "^2.18.1",
     "nodemailer": "^6.7.8"
   },

@@ -1,5 +1,5 @@
 import Fastify, { FastifyInstance } from 'fastify'
-import mysql from 'mysql'
+import mysql, { OkPacket } from 'mysql'
 require('dotenv').config()
 import argon2 from 'argon2';
 import cors from '@fastify/cors'
@@ -9,12 +9,18 @@ const fastify: FastifyInstance = Fastify({})
 fastify.register(require('@fastify/static'), {
     root: __dirname,
 })
+
+fastify.register(require("@fastify/view"), {
+    engine: {
+        ejs: require("ejs"),
+    },
+});
+
 fastify.register(cors, {})
 
 const conn = mysql.createConnection({
     host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
 })
-
 conn.connect()
 
 
@@ -47,6 +53,7 @@ async function dbQuery(query: string, parameters?: Array<any>) {
     return new Promise<Array<any>>((res, rej) => {
         try {
             conn.query(query, parameters, ((err, results) => {
+                if (err) rej(err)
                 res(results)
             }));
         }
@@ -56,7 +63,21 @@ async function dbQuery(query: string, parameters?: Array<any>) {
     })
 }
 
-const generateEmailCode: any = async () => {
+async function dbInsert(query: string, parameters?: Array<any>) {
+    return new Promise<OkPacket>((res, rej) => {
+        try {
+            conn.query(query, parameters, ((err, results) => {
+                if (err) rej(err)
+                res(results)
+            }));
+        }
+        catch (err) {
+            rej(err);
+        }
+    })
+}
+
+const generateEmailCode = async (): Promise<string> => {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
@@ -69,7 +90,7 @@ const generateEmailCode: any = async () => {
     return result
 }
 
-const generateCode: any = async () => {
+const generateCode = async (): Promise<string> => {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
@@ -82,14 +103,26 @@ const generateCode: any = async () => {
     return result
 }
 
+const generateTempPassword = () => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*+=';
+    const charactersLength = characters.length;
+    for (var i = 0; i < 10; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            charactersLength));
+    }
+
+    return result
+}
+
 const retrieveGroupID = async (authenticationKey: string) => {
     return (await dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey]))[0].groupID
 }
 
 const retrieveSessionID = async (groupID: string) => {
-    let res: any = await dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])
+    let res: OkPacket | Array<any> = await dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])
     if (!res.length) {
-        res = await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])
+        res = await dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])
         return res.insertId
     }
     return res[0].sessionID
@@ -108,7 +141,7 @@ const retrieveName = async (userID: string) => {
 }
 
 // USER
-fastify.post('/api/user/login', async (request: any, reply: any) => {
+fastify.post<{ Body: { emailAddress: string, password: string } }>('/api/user/login', async (request, reply) => {
     const { body } = request
 
     if (!('emailAddress' in body) || !('password' in body)) {
@@ -123,7 +156,7 @@ fastify.post('/api/user/login', async (request: any, reply: any) => {
         reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID })
 
         if (!results[0].authenticationKey) {
-            await dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
+            await dbInsert('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(err => console.log(err))
         }
 
     } else {
@@ -131,7 +164,7 @@ fastify.post('/api/user/login', async (request: any, reply: any) => {
     }
 })
 
-fastify.post('/api/user/register', async (request: any, reply: any) => {
+fastify.post<{ Body: { emailAddress: string, password: string, fullName: string, groupID: string } }>('/api/user/register', async (request, reply) => {
     const { body } = request
 
     if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
@@ -145,23 +178,23 @@ fastify.post('/api/user/register', async (request: any, reply: any) => {
     const code = await generateCode();
     const emailCode = await generateEmailCode()
 
-    await dbQuery('INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password, code, emailCode])
+    await dbInsert('INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password, code, emailCode])
     sendMail(body['emailAddress'], 'Verify your Mail', `Hey ${body['fullName']},<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`)
 
     reply.send(code)
 })
 
-fastify.post('/api/group/create', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/group/create', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('groupID' in body)) {
         return reply.code(400).send('Missing required field!')
     }
     await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])
-    await dbQuery('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])
+    await dbInsert('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])
 })
 
-fastify.post('/api/group/update', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, distance: string, petrol: string, currency: string } }>('/api/group/update', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('distance' in body) || !('petrol' in body) || !('currency' in body)) {
@@ -173,7 +206,7 @@ fastify.post('/api/group/update', async (request: any, reply: any) => {
     await dbQuery('UPDATE groups SET distance=?, petrol=?, currency=? WHERE groupID=?', [body['distance'], body['petrol'], body['currency'], groupID])
 })
 
-fastify.get('/api/group/get', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string } }>('/api/group/get', async (request, reply) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -187,7 +220,7 @@ fastify.get('/api/group/get', async (request: any, reply: any) => {
     reply.send(res[0])
 })
 
-fastify.post('/api/user/change-group', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/user/change-group', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('groupID' in body)) {
@@ -200,7 +233,7 @@ fastify.post('/api/user/change-group', async (request: any, reply: any) => {
 
 })
 
-fastify.post('/api/user/change-email', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, newEmail: string } }>('/api/user/change-email', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('newEmail' in body)) {
@@ -214,7 +247,21 @@ fastify.post('/api/user/change-email', async (request: any, reply: any) => {
     sendMail(body['newEmail'], 'PetrolShare - Change Email Address', `Hi!<br><br>We have received a request to change your email to this address. Please click <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="_blank">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team`)
 })
 
-fastify.post('/api/user/change-name', async (request: any, reply: any) => {
+fastify.post<{ Body: { emailAddress: string } }>('/api/user/forgot-password', async (request, reply) => {
+    const { body } = request
+
+    if (!('emailAddress' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    const emailCode = await generateEmailCode();
+    const results = await dbQuery('SELECT emailAddress FROM users WHERE emailAddress=?', [body['emailAddress']])
+    if (!results.length) return reply.code(400).send("There is no user with that email address")
+    await dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])
+
+    sendMail(body['emailAddress'], 'PetrolShare - Forgot your Password', `Hi!<br><br>We have received a request to reset your password. Please click <a href="https://petrolshare.freud-online.co.uk/email/reset-password?code=${emailCode}" target="_blank">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team`)
+})
+
+fastify.post<{ Body: { authenticationKey: string, newName: string } }>('/api/user/change-name', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('newName' in body)) {
@@ -226,7 +273,7 @@ fastify.post('/api/user/change-name', async (request: any, reply: any) => {
     await dbQuery('UPDATE users SET fullName=? WHERE authenticationKey=?', [body['newName'], body['authenticationKey']])
 })
 
-fastify.post('/api/user/change-password', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, newPassword: string } }>('/api/user/change-password', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('newPassword' in body)) {
@@ -240,7 +287,7 @@ fastify.post('/api/user/change-password', async (request: any, reply: any) => {
     await dbQuery('UPDATE users SET password=?, authenticationKey=null WHERE authenticationKey=?', [password, body['authenticationKey']])
 })
 
-fastify.get('/api/user/verify', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string } }>('/api/user/verify', async (request, reply) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -254,7 +301,7 @@ fastify.get('/api/user/verify', async (request: any, reply: any) => {
     reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID })
 })
 
-fastify.get('/api/user/get', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string } }>('/api/user/get', async (request, reply) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -273,7 +320,7 @@ fastify.get('/api/user/get', async (request: any, reply: any) => {
 })
 
 // DISTANCE
-fastify.get('/api/distance/get', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string } }>('/api/distance/get', async (request, reply) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -294,7 +341,7 @@ fastify.get('/api/distance/get', async (request: any, reply: any) => {
     reply.send(Math.round(total * 100) / 100)
 })
 
-fastify.post('/api/distance/reset', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string } }>('/api/distance/reset', async (request, reply) => {
     const { body } = request
 
     if (!body || !('authenticationKey' in body)) {
@@ -308,7 +355,7 @@ fastify.post('/api/distance/reset', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-fastify.post('/api/distance/add', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, distance: string } }>('/api/distance/add', async (request, reply) => {
     const { body } = request
 
     if (!body || !('distance' in body) || !('authenticationKey' in body)) {
@@ -321,7 +368,7 @@ fastify.post('/api/distance/add', async (request: any, reply: any) => {
     const sessionID = await retrieveSessionID(log.groupID)
 
     try {
-        await dbQuery('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])
+        await dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])
     } catch (err) {
         console.log(err);
     }
@@ -330,7 +377,7 @@ fastify.post('/api/distance/add', async (request: any, reply: any) => {
 })
 
 // LOGS
-fastify.get('/api/logs/get', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string } }>('/api/logs/get', async (request, reply) => {
     const { query } = request
 
     if (!('authenticationKey' in query)) {
@@ -342,7 +389,15 @@ fastify.get('/api/logs/get', async (request: any, reply: any) => {
 
     let logs = await dbQuery('SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? ORDER BY l.date DESC', [await retrieveGroupID(query['authenticationKey'])])
 
-    let flat: any = {}
+    let flat: {
+        [key: string]: {
+            sessionID?: string,
+            sessionActive?: string,
+            sessionStart?: string,
+            sessionEnd?: string,
+            logs: Array<any>
+        }
+    } = {}
     sessions.map(e => {
         if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] }
 
@@ -369,7 +424,7 @@ fastify.get('/api/logs/get', async (request: any, reply: any) => {
     reply.send(flat)
 })
 
-fastify.post('/api/logs/delete', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, logID: string } }>('/api/logs/delete', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('logID' in body)) {
@@ -392,7 +447,7 @@ fastify.post('/api/logs/delete', async (request: any, reply: any) => {
 
 })
 
-fastify.post('/api/logs/edit', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, logID: string, distance: string } }>('/api/logs/edit', async (request, reply) => {
     const { body } = request
 
     if (!('authenticationKey' in body) || !('logID' in body) || !('distance' in body)) {
@@ -416,7 +471,7 @@ fastify.post('/api/logs/edit', async (request: any, reply: any) => {
 })
 
 // PRESETS
-fastify.get('/api/preset/get', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string } }>('/api/preset/get', async (request, reply) => {
     const { query } = request
 
     if (!query || !('authenticationKey' in query)) {
@@ -431,7 +486,7 @@ fastify.get('/api/preset/get', async (request: any, reply: any) => {
     reply.send(results)
 })
 
-fastify.post('/api/preset/add', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, presetName: string, distance: string } }>('/api/preset/add', async (request, reply) => {
     const { body } = request
 
     if (!body || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
@@ -441,11 +496,11 @@ fastify.post('/api/preset/add', async (request: any, reply: any) => {
     let userID = await retrieveID(body['authenticationKey'])
     if (!userID) return reply.code(400).send('No user found!')
 
-    await dbQuery('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])
+    await dbInsert('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])
     reply.code(200)
 })
 
-fastify.post('/api/preset/edit', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, presetName: string, presetID: string, distance: string } }>('/api/preset/edit', async (request, reply) => {
     const { body } = request
 
     if (!body || !('presetID' in body) || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
@@ -460,7 +515,7 @@ fastify.post('/api/preset/edit', async (request: any, reply: any) => {
     reply.code(200)
 })
 
-fastify.post('/api/preset/delete', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, presetID: string } }>('/api/preset/delete', async (request, reply) => {
     const { body } = request
 
     if (!body || !('presetID' in body) || !('authenticationKey' in body)) {
@@ -475,7 +530,7 @@ fastify.post('/api/preset/delete', async (request: any, reply: any) => {
 })
 
 // PETROL
-fastify.post('/api/petrol/add', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFilled: number, odometer: number } }>('/api/petrol/add', async (request, reply) => {
     const { body } = request
 
     if (!body || !('totalPrice' in body) || !('litersFilled' in body) || !('authenticationKey' in body) || !('odometer' in body)) {
@@ -505,7 +560,7 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
         distances[e.userID] = { distance: distances[e.userID].distance + parseFloat(e.distance), fullName: e["fullName"] }
     }
 
-    const totalDistance = Object.values(distances).reduce((a: any, b: any) => a["distance"] || 0 + b["distance"], 0)
+    const totalDistance = Object.values(distances).reduce((a, b) => a["distance"] || 0 + b["distance"], 0)
 
     const pricePerLiter = body['totalPrice'] / body['litersFilled']
     const totalCarDistance = body['odometer'] - results[0]['initialOdometer']
@@ -520,17 +575,17 @@ fastify.post('/api/petrol/add', async (request: any, reply: any) => {
         distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance }
     }
 
-    await dbQuery('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
-    await dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
+    await dbInsert('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
+    await dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
 
-    const res: any = await dbQuery('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
+    const res: any = await dbInsert('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
 
     reply.send(res['insertId'])
 })
 
 // INVOICES
 
-fastify.get('/api/invoices/get', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string, invoiceID: string } }>('/api/invoices/get', async (request, reply) => {
     const { query } = request
 
     if (!query || !('authenticationKey' in query)) {
@@ -540,7 +595,7 @@ fastify.get('/api/invoices/get', async (request: any, reply: any) => {
     if (!userID) return reply.code(400).send('No user found!')
 
     if (!('invoiceID' in query)) {
-        const results = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC', [await retrieveGroupID(query['authenticationKey'])])
+        const results: Array<any> = await dbQuery('SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC', [await retrieveGroupID(query['authenticationKey'])])
         if (!results.length) return reply.code(400).send('There are no invoices in that group!')
         return reply.send(results)
     }
@@ -566,11 +621,11 @@ fastify.get('/api/invoices/get', async (request: any, reply: any) => {
         }
     }
 
-    await dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [results[0].invoiceData, query["invoiceID"]])
+    await dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [results[0].invoiceData, query["invoiceID"]])
     reply.send(results[0])
 })
 
-fastify.post('/api/invoices/pay', async (request: any, reply: any) => {
+fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: string } }>('/api/invoices/pay', async (request, reply) => {
     const { body } = request
 
     if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body)) {
@@ -593,14 +648,14 @@ fastify.post('/api/invoices/pay', async (request: any, reply: any) => {
     } else {
         return reply.code(400).send('No user found with that ID!')
     }
-    await dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
+    await dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
 
     reply.send()
 })
 
 // EMAIL
 
-fastify.get('/email/verify', async (request: any, reply: any) => {
+fastify.get<{ Querystring: { authenticationKey: string, code: string } }>('/email/verify', async (request, reply) => {
     const { query } = request
 
     if (!query || !('code' in query)) {
@@ -611,13 +666,13 @@ fastify.get('/email/verify', async (request: any, reply: any) => {
     if (!results.length) return reply.code(400).sendFile('fail.html')
 
     if (results[0].verified && results[0].tempEmail)
-        await dbQuery('UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?', [results[0].tempEmail, query['code']])
+        await dbInsert('UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?', [results[0].tempEmail, query['code']])
     else
-        await dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
+        await dbInsert('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])
     await reply.sendFile('success.html')
 })
 
-fastify.post('/email/resend', async (request: any, reply: any) => {
+fastify.post<{ Body: { emailAddress: string } }>('/email/resend', async (request, reply) => {
     const { body } = request
 
     if (!body || !('emailAddress' in body)) {
@@ -626,9 +681,25 @@ fastify.post('/email/resend', async (request: any, reply: any) => {
 
     const emailCode = await generateEmailCode()
 
-    await dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])
+    await dbInsert('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])
 
     sendMail(body['emailAddress'], 'Verify your Mail', `Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`)
+})
+
+fastify.get<{ Querystring: { code: string } }>('/email/reset-password', async (request, reply) => {
+    const { query } = request
+
+    if (!query || !('code' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT fullName, verified FROM users WHERE verificationCode=?', [query['code']])
+    if (!results.length) return reply.code(400).sendFile('fail.html')
+    const password = generateTempPassword()
+
+    await dbInsert('UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?', [await argon2.hash(password), query['code']])
+
+    await reply.view('reset-password.ejs', { password: password })
 })
 
 // Run the server!

@@ -69,6 +69,11 @@ var fastify = (0, fastify_1.default)({});
 fastify.register(require('@fastify/static'), {
     root: __dirname,
 });
+fastify.register(require("@fastify/view"), {
+    engine: {
+        ejs: require("ejs"),
+    },
+});
 fastify.register(cors_1.default, {});
 var conn = mysql_1.default.createConnection({
     host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
@@ -115,6 +120,8 @@ function dbQuery(query, parameters) {
             return [2 /*return*/, new Promise(function (res, rej) {
                     try {
                         conn.query(query, parameters, (function (err, results) {
+                            if (err)
+                                rej(err);
                             res(results);
                         }));
                     }
@@ -165,6 +172,16 @@ var generateCode = function () { return __awaiter(void 0, void 0, void 0, functi
         }
     });
 }); };
+var generateTempPassword = function () {
+    var result = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*+=';
+    var charactersLength = characters.length;
+    for (var i = 0; i < 10; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            charactersLength));
+    }
+    return result;
+};
 var retrieveGroupID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -184,7 +201,9 @@ var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, vo
                 return [4 /*yield*/, dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])];
             case 2:
                 res = _a.sent();
-                return [2 /*return*/, res.insertId];
+                if (typeof res !== 'object')
+                    return [2 /*return*/, res.insertId];
+                _a.label = 3;
             case 3: return [2 /*return*/, res[0].sessionID];
         }
     });
@@ -329,6 +348,14 @@ fastify.post('/api/group/update', function (request, reply) { return __awaiter(v
         }
     });
 }); });
+fastify.get('/api/test', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query;
+    return __generator(this, function (_a) {
+        query = request.query;
+        retrieveSessionID('testing-group');
+        return [2 /*return*/];
+    });
+}); });
 fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, groupID, res;
     return __generator(this, function (_a) {
@@ -396,6 +423,31 @@ fastify.post('/api/user/change-email', function (request, reply) { return __awai
             case 4:
                 _c.sent();
                 sendMail(body['newEmail'], 'PetrolShare - Change Email Address', "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/api/user/forgot-password', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, emailCode, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('emailAddress' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, generateEmailCode()];
+            case 1:
+                emailCode = _a.sent();
+                return [4 /*yield*/, dbQuery('SELECT emailAddress FROM users WHERE emailAddress=?', [body['emailAddress']])];
+            case 2:
+                results = _a.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send("There is no user with that email address")];
+                return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
+            case 3:
+                _a.sent();
+                sendMail(body['emailAddress'], 'PetrolShare - Forgot your Password', "Hi!<br><br>We have received a request to reset your password. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/reset-password?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
                 return [2 /*return*/];
         }
     });
@@ -1001,6 +1053,34 @@ fastify.post('/email/resend', function (request, reply) { return __awaiter(void 
             case 2:
                 _a.sent();
                 sendMail(body['emailAddress'], 'Verify your Mail', "Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get('/email/reset-password', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results, password, _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                query = request.query;
+                if (!query || !('code' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT fullName, verified FROM users WHERE verificationCode=?', [query['code']])];
+            case 1:
+                results = _c.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
+                password = generateTempPassword();
+                _a = dbQuery;
+                _b = ['UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?'];
+                return [4 /*yield*/, argon2_1.default.hash(password)];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent(), query['code']]]))];
+            case 3:
+                _c.sent();
+                return [4 /*yield*/, reply.view('reset-password.ejs', { password: password })];
+            case 4:
+                _c.sent();
                 return [2 /*return*/];
         }
     });
