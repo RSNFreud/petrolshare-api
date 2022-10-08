@@ -132,6 +132,24 @@ function dbQuery(query, parameters) {
         });
     });
 }
+function dbInsert(query, parameters) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2 /*return*/, new Promise(function (res, rej) {
+                    try {
+                        conn.query(query, parameters, (function (err, results) {
+                            if (err)
+                                rej(err);
+                            res(results);
+                        }));
+                    }
+                    catch (err) {
+                        rej(err);
+                    }
+                })];
+        });
+    });
+}
 var generateEmailCode = function () { return __awaiter(void 0, void 0, void 0, function () {
     var result, characters, charactersLength, i;
     return __generator(this, function (_a) {
@@ -198,12 +216,10 @@ var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, vo
             case 1:
                 res = _a.sent();
                 if (!!res.length) return [3 /*break*/, 3];
-                return [4 /*yield*/, dbQuery('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])];
+                return [4 /*yield*/, dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])];
             case 2:
                 res = _a.sent();
-                if (typeof res !== 'object')
-                    return [2 /*return*/, res.insertId];
-                _a.label = 3;
+                return [2 /*return*/, res.insertId];
             case 3: return [2 /*return*/, res[0].sessionID];
         }
     });
@@ -264,7 +280,7 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                 code = _a;
                 reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID });
                 if (!!results[0].authenticationKey) return [3 /*break*/, 6];
-                return [4 /*yield*/, dbQuery('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
+                return [4 /*yield*/, dbInsert('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
             case 5:
                 _b.sent();
                 _b.label = 6;
@@ -297,7 +313,7 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
                 return [4 /*yield*/, generateEmailCode()];
             case 3:
                 emailCode = _d.sent();
-                _a = dbQuery;
+                _a = dbInsert;
                 _b = ['INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?,?)'];
                 _c = [body['groupID'], body['fullName'], body['emailAddress']];
                 return [4 /*yield*/, password];
@@ -322,7 +338,7 @@ fastify.post('/api/group/create', function (request, reply) { return __awaiter(v
                 return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])];
             case 1:
                 _a.sent();
-                return [4 /*yield*/, dbQuery('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])];
+                return [4 /*yield*/, dbInsert('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])];
             case 2:
                 _a.sent();
                 return [2 /*return*/];
@@ -346,14 +362,6 @@ fastify.post('/api/group/update', function (request, reply) { return __awaiter(v
                 _a.sent();
                 return [2 /*return*/];
         }
-    });
-}); });
-fastify.get('/api/test', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query;
-    return __generator(this, function (_a) {
-        query = request.query;
-        retrieveSessionID('testing-group');
-        return [2 /*return*/];
     });
 }); });
 fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
@@ -624,7 +632,7 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
                 _a.label = 4;
             case 4:
                 _a.trys.push([4, 6, , 7]);
-                return [4 /*yield*/, dbQuery('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])];
+                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])];
             case 5:
                 _a.sent();
                 return [3 /*break*/, 7];
@@ -783,7 +791,7 @@ fastify.post('/api/preset/add', function (request, reply) { return __awaiter(voi
                 userID = _a.sent();
                 if (!userID)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])];
+                return [4 /*yield*/, dbInsert('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])];
             case 2:
                 _a.sent();
                 reply.code(200);
@@ -875,21 +883,21 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
                     distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance };
                 }
-                _c = dbQuery;
+                _c = dbInsert;
                 _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
                 _e = [Date.now()];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 4: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_m.sent()])]))];
             case 5:
                 _m.sent();
-                _f = dbQuery;
+                _f = dbInsert;
                 _g = ['INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)'];
                 _h = [Date.now()];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 6: return [4 /*yield*/, _f.apply(void 0, _g.concat([_h.concat([_m.sent(), true, body['odometer']])]))];
             case 7:
                 _m.sent();
-                _j = dbQuery;
+                _j = dbInsert;
                 _k = ['INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)'];
                 _l = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100];
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
@@ -960,7 +968,7 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
             case 11:
                 i++;
                 return [3 /*break*/, 7];
-            case 12: return [4 /*yield*/, dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [results[0].invoiceData, query["invoiceID"]])];
+            case 12: return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [results[0].invoiceData, query["invoiceID"]])];
             case 13:
                 _f.sent();
                 reply.send(results[0]);
@@ -998,7 +1006,7 @@ fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(v
                 else {
                     return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
                 }
-                return [4 /*yield*/, dbQuery('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
+                return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
             case 4:
                 _d.sent();
                 reply.send();
@@ -1022,11 +1030,11 @@ fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).sendFile('fail.html')];
                 if (!(results[0].verified && results[0].tempEmail)) return [3 /*break*/, 3];
-                return [4 /*yield*/, dbQuery('UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?', [results[0].tempEmail, query['code']])];
+                return [4 /*yield*/, dbInsert('UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?', [results[0].tempEmail, query['code']])];
             case 2:
                 _a.sent();
                 return [3 /*break*/, 5];
-            case 3: return [4 /*yield*/, dbQuery('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
+            case 3: return [4 /*yield*/, dbInsert('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
             case 4:
                 _a.sent();
                 _a.label = 5;
@@ -1049,7 +1057,7 @@ fastify.post('/email/resend', function (request, reply) { return __awaiter(void 
                 return [4 /*yield*/, generateEmailCode()];
             case 1:
                 emailCode = _a.sent();
-                return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
+                return [4 /*yield*/, dbInsert('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
             case 2:
                 _a.sent();
                 sendMail(body['emailAddress'], 'Verify your Mail', "Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
@@ -1072,7 +1080,7 @@ fastify.get('/email/reset-password', function (request, reply) { return __awaite
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).sendFile('fail.html')];
                 password = generateTempPassword();
-                _a = dbQuery;
+                _a = dbInsert;
                 _b = ['UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?'];
                 return [4 /*yield*/, argon2_1.default.hash(password)];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent(), query['code']]]))];
