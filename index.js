@@ -315,7 +315,7 @@ fastify.post('/api/notify/deregister', function (request, reply) { return __awai
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('notificationKey' in body)) {
+                if (!('emailAddress' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, dbInsert('UPDATE users SET notificationKey=null WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])];

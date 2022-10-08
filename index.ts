@@ -178,7 +178,7 @@ fastify.post<{ Body: { emailAddress: string, notificationKey: string } }>('/api/
 fastify.post<{ Body: { emailAddress: string, notificationKey: string } }>('/api/notify/deregister', async (request, reply) => {
     const { body } = request
 
-    if (!('emailAddress' in body) || !('notificationKey' in body)) {
+    if (!('emailAddress' in body)) {
         return reply.code(400).send('Missing required field!')
     }
 
