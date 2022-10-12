@@ -168,9 +168,12 @@ fastify.post<{ Body: { emailAddress: string, password: string } }>('/api/user/lo
 fastify.post<{ Body: { emailAddress: string, notificationKey: string } }>('/api/notify/register', async (request, reply) => {
     const { body } = request
 
+
     if (!('emailAddress' in body) || !('notificationKey' in body)) {
         return reply.code(400).send('Missing required field!')
     }
+
+    console.log(body["notificationKey"]);
 
     await dbInsert('UPDATE users SET notificationKey=? WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])
 })
@@ -581,7 +584,7 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
         distances[e.userID] = { distance: distances[e.userID].distance + parseFloat(e.distance), fullName: e["fullName"] }
     }
 
-    const totalDistance = Object.values(distances).reduce((a, b) => a["distance"] || 0 + b["distance"], 0)
+    const totalDistance = Object.values(distances).reduce((a, b) => a + b["distance"], 0)
 
     const pricePerLiter = body['totalPrice'] / body['litersFilled']
     const totalCarDistance = body['odometer'] - results[0]['initialOdometer']
@@ -593,13 +596,12 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
         distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 }
     })
     if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
-        distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance }
+        distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: Math.round((totalCarDistance - totalDistance) * 100) / 100 }
     }
+
 
     await dbInsert('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     await dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
-
-
 
     const res: any = await dbInsert('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
     sendNotification(results.filter(e => e.userID !== userID), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] })
@@ -726,15 +728,12 @@ fastify.get<{ Querystring: { code: string } }>('/email/reset-password', async (r
 })
 
 fastify.get<{ Querystring: { code: string } }>('/test', async (request, reply) => {
-
-
-    const results = await dbQuery('SELECT notificationKey FROM users WHERE notificationKey IS NOT NULL')
-    sendNotification(results, 'testing!', { screenName: 'Invoices', invoiceID: 417 })
+    sendNotification([{ notificationKey: "ExponentPushToken[ev6pBSK_Y565f-C9IiebNr]" }], 'Theo should be admin...')
 })
 
 // NOTIFY
 
-const sendNotification = async (notifKeys: Array<any>, message: string, route: { screenName: string, invoiceID?: number }) => {
+const sendNotification = async (notifKeys: Array<any>, message: string, route?: { screenName: string, invoiceID?: number }) => {
     let expo = new Expo({})
 
     if (!notifKeys) return
@@ -742,6 +741,7 @@ const sendNotification = async (notifKeys: Array<any>, message: string, route: {
 
     for (let pushToken of notifKeys) {
         if (!pushToken["notificationKey"]) continue
+
         // // Check that all your push tokens appear to be valid Expo push tokens
         if (!Expo.isExpoPushToken(pushToken["notificationKey"])) {
             console.error(`Push token ${pushToken["notificationKey"]} is not a valid Expo push token`);
@@ -752,17 +752,55 @@ const sendNotification = async (notifKeys: Array<any>, message: string, route: {
         messages.push({
             to: pushToken["notificationKey"],
             body: message,
-            data: { route: route.screenName, invoiceID: route.invoiceID },
+            data: route && { route: route.screenName, invoiceID: route.invoiceID },
         })
     }
     if (!messages) return
     let chunks = expo.chunkPushNotifications(messages);
     let tickets = [];
     (async () => {
+
         for (let chunk of chunks) {
             try {
                 let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
                 tickets.push(...ticketChunk);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    })();
+    let receiptIds = [];
+    for (let ticket of tickets) {
+        // NOTE: Not all tickets have IDs; for example, tickets for notifications
+        // that could not be enqueued will have error information and no receipt ID.
+        if (ticket.id) {
+            receiptIds.push(ticket.id);
+        }
+    }
+
+    let receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+    (async () => {
+        // Like sending notifications, there are different strategies you could use
+        // to retrieve batches of receipts from the Expo service.
+        for (let chunk of receiptIdChunks) {
+            try {
+                let receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+
+                // The receipts specify whether Apple or Google successfully received the
+                // notification and information about an error, if one occurred.
+                for (let receiptId in receipts) {
+                    let { status, message, details } = receipts[receiptId];
+                    if (status === 'ok') {
+                        continue;
+                    } else if (status === 'error') {
+                        console.error(
+                            `There was an error sending a notification: ${message}`
+                        );
+                        if (details && details.error) {
+                            console.error(`The error code is ${details.error}`);
+                        }
+                    }
+                }
             } catch (error) {
                 console.error(error);
             }

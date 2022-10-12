@@ -302,6 +302,7 @@ fastify.post('/api/notify/register', function (request, reply) { return __awaite
                 if (!('emailAddress' in body) || !('notificationKey' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
+                console.log(body["notificationKey"]);
                 return [4 /*yield*/, dbInsert('UPDATE users SET notificationKey=? WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])];
             case 1:
                 _a.sent();
@@ -902,7 +903,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     }
                     distances[e.userID] = { distance: distances[e.userID].distance + parseFloat(e.distance), fullName: e["fullName"] };
                 }
-                totalDistance = Object.values(distances).reduce(function (a, b) { return a["distance"] || 0 + b["distance"]; }, 0);
+                totalDistance = Object.values(distances).reduce(function (a, b) { return a + b["distance"]; }, 0);
                 pricePerLiter = body['totalPrice'] / body['litersFilled'];
                 totalCarDistance = body['odometer'] - results[0]['initialOdometer'];
                 litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] && totalCarDistance > 0 ? totalCarDistance : totalDistance);
@@ -914,7 +915,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 };
                 });
                 if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
-                    distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: totalCarDistance - totalDistance };
+                    distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: Math.round((totalCarDistance - totalDistance) * 100) / 100 };
                 }
                 _c = dbInsert;
                 _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
@@ -1128,21 +1129,15 @@ fastify.get('/email/reset-password', function (request, reply) { return __awaite
     });
 }); });
 fastify.get('/test', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var results;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT notificationKey FROM users WHERE notificationKey IS NOT NULL')];
-            case 1:
-                results = _a.sent();
-                sendNotification(results, 'testing!', { screenName: 'Invoices', invoiceID: 417 });
-                return [2 /*return*/];
-        }
+        sendNotification([{ notificationKey: "ExponentPushToken[ev6pBSK_Y565f-C9IiebNr]" }], 'Theo should be admin...');
+        return [2 /*return*/];
     });
 }); });
 // NOTIFY
 var sendNotification = function (notifKeys, message, route) { return __awaiter(void 0, void 0, void 0, function () {
-    var expo, messages, _i, notifKeys_1, pushToken, chunks, tickets;
-    return __generator(this, function (_a) {
+    var expo, messages, _i, notifKeys_1, pushToken, chunks, tickets, receiptIds, _a, tickets_1, ticket, receiptIdChunks;
+    return __generator(this, function (_b) {
         expo = new expo_server_sdk_1.default({});
         if (!notifKeys)
             return [2 /*return*/];
@@ -1160,7 +1155,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
             messages.push({
                 to: pushToken["notificationKey"],
                 body: message,
-                data: { route: route.screenName, invoiceID: route.invoiceID },
+                data: route && { route: route.screenName, invoiceID: route.invoiceID },
             });
         }
         if (!messages)
@@ -1188,6 +1183,58 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
                     case 4:
                         error_1 = _a.sent();
                         console.error(error_1);
+                        return [3 /*break*/, 5];
+                    case 5:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        }); })();
+        receiptIds = [];
+        for (_a = 0, tickets_1 = tickets; _a < tickets_1.length; _a++) {
+            ticket = tickets_1[_a];
+            // NOTE: Not all tickets have IDs; for example, tickets for notifications
+            // that could not be enqueued will have error information and no receipt ID.
+            if (ticket.id) {
+                receiptIds.push(ticket.id);
+            }
+        }
+        receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+        (function () { return __awaiter(void 0, void 0, void 0, function () {
+            var _i, receiptIdChunks_1, chunk, receipts, receiptId, _a, status_1, message_1, details, error_2;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _i = 0, receiptIdChunks_1 = receiptIdChunks;
+                        _b.label = 1;
+                    case 1:
+                        if (!(_i < receiptIdChunks_1.length)) return [3 /*break*/, 6];
+                        chunk = receiptIdChunks_1[_i];
+                        _b.label = 2;
+                    case 2:
+                        _b.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, expo.getPushNotificationReceiptsAsync(chunk)];
+                    case 3:
+                        receipts = _b.sent();
+                        // The receipts specify whether Apple or Google successfully received the
+                        // notification and information about an error, if one occurred.
+                        for (receiptId in receipts) {
+                            _a = receipts[receiptId], status_1 = _a.status, message_1 = _a.message, details = _a.details;
+                            if (status_1 === 'ok') {
+                                continue;
+                            }
+                            else if (status_1 === 'error') {
+                                console.error("There was an error sending a notification: " + message_1);
+                                if (details && details.error) {
+                                    console.error("The error code is " + details.error);
+                                }
+                            }
+                        }
+                        return [3 /*break*/, 5];
+                    case 4:
+                        error_2 = _b.sent();
+                        console.error(error_2);
                         return [3 /*break*/, 5];
                     case 5:
                         _i++;
