@@ -561,7 +561,8 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
         return reply.code(400).send('Missing required field!')
     }
 
-    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
+    const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionID=47', [await retrieveGroupID(body['authenticationKey'])])
+    // const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
 
     if (!results || !results.length) return reply.code(400).send('No logs found')
 
@@ -599,12 +600,17 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
         distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: Math.round((totalCarDistance - totalDistance) * 100) / 100 }
     }
 
-
     await dbInsert('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     await dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
 
     const res: any = await dbInsert('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
-    sendNotification(results.filter(e => e.userID !== userID), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] })
+    let notifications = results.filter(e => e.userID !== userID)
+    notifications = notifications.reduce((map, obj) => {
+        map[obj.userID] = obj
+        return map
+    }, {})
+
+    sendNotification(Object.values(notifications), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] })
     reply.send(res['insertId'])
 })
 

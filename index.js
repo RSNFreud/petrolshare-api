@@ -879,7 +879,7 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
 }); });
 // PETROL
 fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, totalCarDistance, litersPerKm, userID, _c, _d, _e, _f, _g, _h, res, _j, _k, _l;
+    var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, totalCarDistance, litersPerKm, userID, _c, _d, _e, _f, _g, _h, res, _j, _k, _l, notifications;
     return __generator(this, function (_m) {
         switch (_m.label) {
             case 0:
@@ -888,11 +888,14 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
+                _b = ['SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionID=47'];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
-            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_m.sent()]]))];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_m.sent()]]))
+                // const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
+            ];
             case 2:
                 results = _m.sent();
+                // const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1', [await retrieveGroupID(body['authenticationKey'])])
                 if (!results || !results.length)
                     return [2 /*return*/, reply.code(400).send('No logs found')];
                 distances = {};
@@ -938,7 +941,12 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
             case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([_m.sent(), body['litersFilled']])]))];
             case 9:
                 res = _m.sent();
-                sendNotification(results.filter(function (e) { return e.userID !== userID; }), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] });
+                notifications = results.filter(function (e) { return e.userID !== userID; });
+                notifications = notifications.reduce(function (map, obj) {
+                    map[obj.userID] = obj;
+                    return map;
+                }, {});
+                sendNotification(Object.values(notifications), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] });
                 reply.send(res['insertId']);
                 return [2 /*return*/];
         }
