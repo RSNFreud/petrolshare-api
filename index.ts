@@ -188,10 +188,10 @@ fastify.post<{ Body: { emailAddress: string, notificationKey: string } }>('/api/
     await dbInsert('UPDATE users SET notificationKey=null WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])
 })
 
-fastify.post<{ Body: { emailAddress: string, password: string, fullName: string, groupID: string } }>('/api/user/register', async (request, reply) => {
+fastify.post<{ Body: { emailAddress: string, password: string, fullName: string } }>('/api/user/register', async (request, reply) => {
     const { body } = request
 
-    if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
+    if (!('emailAddress' in body) || !('password' in body) || !('fullName' in body)) {
         return reply.code(400).send('Missing required field!')
     }
 
@@ -202,7 +202,7 @@ fastify.post<{ Body: { emailAddress: string, password: string, fullName: string,
     const code = await generateCode();
     const emailCode = await generateEmailCode()
 
-    await dbInsert('INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?,?)', [body['groupID'], body['fullName'], body['emailAddress'], await password, code, emailCode])
+    await dbInsert('INSERT INTO users( fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?)', [body['fullName'], body['emailAddress'], await password, code, emailCode])
     sendMail(body['emailAddress'], 'Verify your Mail', `Hey ${body['fullName']},<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`)
 
     reply.send(code)

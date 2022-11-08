@@ -332,7 +332,7 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
         switch (_d.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('password' in body) || !('groupID' in body) || !('fullName' in body)) {
+                if (!('emailAddress' in body) || !('password' in body) || !('fullName' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
                 return [4 /*yield*/, dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])];
@@ -348,8 +348,8 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
             case 3:
                 emailCode = _d.sent();
                 _a = dbInsert;
-                _b = ['INSERT INTO users(groupID, fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?,?)'];
-                _c = [body['groupID'], body['fullName'], body['emailAddress']];
+                _b = ['INSERT INTO users( fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?)'];
+                _c = [body['fullName'], body['emailAddress']];
                 return [4 /*yield*/, password];
             case 4: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent(), code, emailCode])]))];
             case 5:
