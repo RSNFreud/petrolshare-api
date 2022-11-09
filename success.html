@@ -11,10 +11,20 @@
 <body
     style="margin:0; height: 100vh;background: #001E24; display: flex; align-items: center; color: white;justify-content: center;font-family: Arial, Helvetica, sans-serif;padding: 0 30px;">
     <div class="dialog" style="text-align: center;line-height: 150%;">
-        Your email address has been successfully verified! Click <a href="petrolshare://" style="color: white;">here</a>
+        Your email address has been successfully verified! Click <a
+            href="intent:#Intent;scheme=petrolshare;package=com.rsnfreud.PetrolShare;end" style="color: white;">here</a>
         to launch the app.
         <p></p>
     </div>
+
+    <script>
+        const ua = navigator.userAgent.toLowerCase();
+        const isAndroid = ua.indexOf("android") > -1;
+        document.querySelector('a').href = isAndroid ?
+            "intent:#Intent;scheme=petrolshare;package=com.rsnfreud.PetrolShare;end" :
+            "https://petrolshare.freud-online.co.uk"
+        const isIos = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
+    </script>
 </body>
 
 </html>
