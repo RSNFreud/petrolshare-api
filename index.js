@@ -933,7 +933,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 _m.sent();
                 _j = dbInsert;
                 _k = ['INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)'];
-                _l = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round(totalDistance * 100) / 100];
+                _l = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100];
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
             case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([_m.sent(), body['litersFilled']])]))];
             case 9:
