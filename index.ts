@@ -684,6 +684,50 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
     reply.send()
 })
 
+fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: string, distance: string } }>('/api/invoices/assign', async (request, reply) => {
+    const { body } = request
+
+    if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body) || !('distance' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    let userID = await retrieveID(body['authenticationKey'])
+    if (!userID) return reply.code(400).send('No user found!')
+
+    let data: any = await dbQuery('SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?', [body["invoiceID"], await retrieveGroupID(body['authenticationKey'])])
+    if (!data.length) return reply.code(400).send('There are no invoices with that ID!')
+
+    let results = JSON.parse(data[0].invoiceData)
+
+    let totalDistance = data[0]["totalDistance"]
+    const pricePerLiter = data[0]['totalPrice'] / data[0]['litersFilled']
+    const litersPerKm = data[0]['litersFilled'] / totalDistance
+
+    if (results[body["userID"]]) {
+        const newDistance = parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance)
+        const unidentified: { fullName: string, distance: string } = results['0']
+        const newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"])
+        console.log(litersPerKm, pricePerLiter);
+
+        results[body["userID"]] = {
+            ...results[body["userID"]], distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2)
+        }
+        if (unidentified) {
+            if (newUnidentified <= 0) delete results["0"]
+            else
+                results['0'] = {
+                    ...results["0"], distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2)
+                }
+        }
+    } else {
+        return reply.code(400).send('No user found with that ID!')
+    }
+
+    await dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
+
+    reply.send()
+})
+
 // EMAIL
 
 fastify.get<{ Querystring: { authenticationKey: string, code: string } }>('/email/verify', async (request, reply) => {

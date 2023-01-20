@@ -1054,6 +1054,57 @@ fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(v
         }
     });
 }); });
+fastify.post('/api/invoices/assign', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userID, data, _a, _b, _c, results, totalDistance, pricePerLiter, litersPerKm, newDistance, unidentified, newUnidentified;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body) || !('distance' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = _d.sent();
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                _a = dbQuery;
+                _b = ['SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _c = [body["invoiceID"]];
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
+            case 3:
+                data = _d.sent();
+                if (!data.length)
+                    return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
+                results = JSON.parse(data[0].invoiceData);
+                totalDistance = data[0]["totalDistance"];
+                pricePerLiter = data[0]['totalPrice'] / data[0]['litersFilled'];
+                litersPerKm = data[0]['litersFilled'] / totalDistance;
+                if (results[body["userID"]]) {
+                    newDistance = parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance);
+                    unidentified = results['0'];
+                    newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"]);
+                    console.log(litersPerKm, pricePerLiter);
+                    results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2) });
+                    if (unidentified) {
+                        if (newUnidentified <= 0)
+                            delete results["0"];
+                        else
+                            results['0'] = __assign(__assign({}, results["0"]), { distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2) });
+                    }
+                }
+                else {
+                    return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
+                }
+                return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
+            case 4:
+                _d.sent();
+                reply.send();
+                return [2 /*return*/];
+        }
+    });
+}); });
 // EMAIL
 fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
