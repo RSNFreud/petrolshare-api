@@ -698,6 +698,7 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
     if (!data.length) return reply.code(400).send('There are no invoices with that ID!')
 
     let results = JSON.parse(data[0].invoiceData)
+    if (!results['0']) return reply.code(400).send('No unindentified distance to assign!')
 
     let totalDistance = data[0]["totalDistance"]
     const pricePerLiter = data[0]['totalPrice'] / data[0]['litersFilled']
@@ -707,18 +708,17 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
         const newDistance = parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance)
         const unidentified: { fullName: string, distance: string } = results['0']
         const newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"])
-        console.log(litersPerKm, pricePerLiter);
+
 
         results[body["userID"]] = {
             ...results[body["userID"]], distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2)
         }
-        if (unidentified) {
-            if (newUnidentified <= 0) delete results["0"]
-            else
-                results['0'] = {
-                    ...results["0"], distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2)
-                }
-        }
+        if (newUnidentified <= 0) delete results["0"]
+        else
+            results['0'] = {
+                ...results["0"], distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2)
+            }
+
     } else {
         return reply.code(400).send('No user found with that ID!')
     }

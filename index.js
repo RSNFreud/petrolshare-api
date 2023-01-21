@@ -1078,6 +1078,8 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
                 if (!data.length)
                     return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
                 results = JSON.parse(data[0].invoiceData);
+                if (!results['0'])
+                    return [2 /*return*/, reply.code(400).send('No unindentified distance to assign!')];
                 totalDistance = data[0]["totalDistance"];
                 pricePerLiter = data[0]['totalPrice'] / data[0]['litersFilled'];
                 litersPerKm = data[0]['litersFilled'] / totalDistance;
@@ -1085,14 +1087,11 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
                     newDistance = parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance);
                     unidentified = results['0'];
                     newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"]);
-                    console.log(litersPerKm, pricePerLiter);
                     results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2) });
-                    if (unidentified) {
-                        if (newUnidentified <= 0)
-                            delete results["0"];
-                        else
-                            results['0'] = __assign(__assign({}, results["0"]), { distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2) });
-                    }
+                    if (newUnidentified <= 0)
+                        delete results["0"];
+                    else
+                        results['0'] = __assign(__assign({}, results["0"]), { distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2) });
                 }
                 else {
                     return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
