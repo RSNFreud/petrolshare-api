@@ -694,7 +694,7 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
     let userID = await retrieveID(body['authenticationKey'])
     if (!userID) return reply.code(400).send('No user found!')
 
-    let data: any = await dbQuery('SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?', [body["invoiceID"], await retrieveGroupID(body['authenticationKey'])])
+    let data: any = await dbQuery('SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer, s.sessionID FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?', [body["invoiceID"], await retrieveGroupID(body['authenticationKey'])])
     if (!data.length) return reply.code(400).send('There are no invoices with that ID!')
 
     let results = JSON.parse(data[0].invoiceData)
@@ -709,7 +709,6 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
         const unidentified: { fullName: string, distance: string } = results['0']
         const newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"])
 
-
         results[body["userID"]] = {
             ...results[body["userID"]], distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2)
         }
@@ -723,6 +722,7 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
         return reply.code(400).send('No user found with that ID!')
     }
 
+    await dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data["sessionID"]])
     await dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
 
     reply.send()

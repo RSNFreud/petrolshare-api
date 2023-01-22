@@ -1069,7 +1069,7 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
                 if (!userID)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
                 _a = dbQuery;
-                _b = ['SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _b = ['SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer, s.sessionID FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
                 _c = [body["invoiceID"]];
                 return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
@@ -1096,8 +1096,11 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
                 else {
                     return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
                 }
-                return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
+                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data["sessionID"]])];
             case 4:
+                _d.sent();
+                return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
+            case 5:
                 _d.sent();
                 reply.send();
                 return [2 /*return*/];
