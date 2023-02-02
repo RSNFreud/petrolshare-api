@@ -722,7 +722,7 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
         return reply.code(400).send('No user found with that ID!')
     }
 
-    await dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data["sessionID"]])
+    await dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data[0]["sessionID"]])
     await dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
 
     reply.send()

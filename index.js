@@ -1096,7 +1096,7 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
                 else {
                     return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
                 }
-                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data["sessionID"]])];
+                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data[0]["sessionID"]])];
             case 4:
                 _d.sent();
                 return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
