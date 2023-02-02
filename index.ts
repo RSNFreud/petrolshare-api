@@ -610,7 +610,7 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
         return map
     }, {})
 
-    sendNotification(Object.values(notifications), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] })
+    sendNotification(Object.values(notifications), "You have a new invoice waiting!", { route: "Invoices", invoiceID: res["insertId"] })
     reply.send(res['insertId'])
 })
 
@@ -778,12 +778,12 @@ fastify.get<{ Querystring: { code: string } }>('/email/reset-password', async (r
 })
 
 fastify.get<{ Querystring: { code: string } }>('/test', async (request, reply) => {
-    sendNotification([{ notificationKey: "ExponentPushToken[ev6pBSK_Y565f-C9IiebNr]" }], 'Theo should be admin...')
+    sendNotification([{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }], 'Testing...', { route: 'Invoices', invoiceID: 440 })
 })
 
 // NOTIFY
 
-const sendNotification = async (notifKeys: Array<any>, message: string, route?: { screenName: string, invoiceID?: number }) => {
+const sendNotification = async (notifKeys: Array<any>, message: string, route?: { route: string, invoiceID?: number }) => {
     let expo = new Expo({})
 
     if (!notifKeys) return
@@ -802,7 +802,7 @@ const sendNotification = async (notifKeys: Array<any>, message: string, route?: 
         messages.push({
             to: pushToken["notificationKey"],
             body: message,
-            data: route && { route: route.screenName, invoiceID: route.invoiceID },
+            data: route && { route: route.route, invoiceID: route.invoiceID },
         })
     }
     if (!messages) return

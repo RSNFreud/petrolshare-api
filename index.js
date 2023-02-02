@@ -943,7 +943,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     map[obj.userID] = obj;
                     return map;
                 }, {});
-                sendNotification(Object.values(notifications), "You have a new invoice waiting!", { screenName: "Invoices", invoiceID: res["insertId"] });
+                sendNotification(Object.values(notifications), "You have a new invoice waiting!", { route: "Invoices", invoiceID: res["insertId"] });
                 reply.send(res['insertId']);
                 return [2 /*return*/];
         }
@@ -1188,7 +1188,7 @@ fastify.get('/email/reset-password', function (request, reply) { return __awaite
 }); });
 fastify.get('/test', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        sendNotification([{ notificationKey: "ExponentPushToken[ev6pBSK_Y565f-C9IiebNr]" }], 'Theo should be admin...');
+        sendNotification([{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }], 'Testing...', { route: 'Invoices', invoiceID: 440 });
         return [2 /*return*/];
     });
 }); });
@@ -1213,7 +1213,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
             messages.push({
                 to: pushToken["notificationKey"],
                 body: message,
-                data: route && { route: route.screenName, invoiceID: route.invoiceID },
+                data: route && { route: route.route, invoiceID: route.invoiceID },
             });
         }
         if (!messages)
