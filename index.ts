@@ -566,7 +566,7 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
 
     if (!results || !results.length) return reply.code(400).send('No logs found')
 
-    let distances: { [key: string]: { distance: number, fullName: string, paymentDue?: number, paid?: boolean } } = {}
+    let distances: { [key: string]: { distance: number, fullName: string, paymentDue?: number, paid?: boolean, liters?: string } } = {}
 
     for (let i = 0; i < results.length; i++) {
         const e: {
@@ -594,7 +594,7 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
     const userID = await retrieveID(body['authenticationKey'])
 
     Object.entries(distances).map(([key, value]) => {
-        distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 }
+        distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100, liters: (value.distance * litersPerKm).toFixed(2) }
     })
     if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
         distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: Math.round((totalCarDistance - totalDistance) * 100) / 100 }
@@ -603,7 +603,7 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
     await dbInsert('UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1', [Date.now(), await retrieveGroupID(body['authenticationKey'])])
     await dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)', [Date.now(), await retrieveGroupID(body['authenticationKey']), true, body['odometer']])
 
-    const res: any = await dbInsert('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled']])
+    const res: any = await dbInsert('INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter) VALUES (?,?,?,?,?,?,?)', [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100, await retrieveID(body['authenticationKey']), body['litersFilled'], pricePerLiter])
     let notifications = results.filter(e => e.userID !== userID)
     notifications = notifications.reduce((map, obj) => {
         map[obj.userID] = obj
@@ -710,7 +710,7 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
         const newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"])
 
         results[body["userID"]] = {
-            ...results[body["userID"]], distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2)
+            ...results[body["userID"]], distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2)
         }
         if (newUnidentified <= 0) delete results["0"]
         else

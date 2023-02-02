@@ -912,7 +912,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                 userID = _m.sent();
                 Object.entries(distances).map(function (_a) {
                     var key = _a[0], value = _a[1];
-                    distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100 };
+                    distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100, liters: (value.distance * litersPerKm).toFixed(2) };
                 });
                 if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
                     distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: Math.round((totalCarDistance - totalDistance) * 100) / 100 };
@@ -932,10 +932,10 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
             case 7:
                 _m.sent();
                 _j = dbInsert;
-                _k = ['INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled) VALUES (?,?,?,?,?,?)'];
+                _k = ['INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter) VALUES (?,?,?,?,?,?,?)'];
                 _l = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100];
                 return [4 /*yield*/, retrieveID(body['authenticationKey'])];
-            case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([_m.sent(), body['litersFilled']])]))];
+            case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([_m.sent(), body['litersFilled'], pricePerLiter])]))];
             case 9:
                 res = _m.sent();
                 notifications = results.filter(function (e) { return e.userID !== userID; });
@@ -1087,7 +1087,7 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
                     newDistance = parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance);
                     unidentified = results['0'];
                     newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"]);
-                    results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2) });
+                    results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2) });
                     if (newUnidentified <= 0)
                         delete results["0"];
                     else
