@@ -631,7 +631,7 @@ fastify.get<{ Querystring: { authenticationKey: string, invoiceID: string } }>('
         return reply.send(results)
     }
 
-    let results = await dbQuery('SELECT u.fullName, i.invoiceData, i.totalDistance, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])
+    let results = await dbQuery('SELECT u.fullName, i.invoiceData, i.totalDistance, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?', [query["invoiceID"], await retrieveGroupID(query['authenticationKey'])])
     if (!results.length) return reply.code(400).send('There are no invoices with that ID!')
 
     for (let i = 0; i < results.length; i++) {
