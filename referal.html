@@ -22,7 +22,7 @@
         const ua = navigator.userAgent.toLowerCase();
         const isAndroid = ua.indexOf("android") > -1;
         document.querySelector('a').href = isAndroid ?
-            `intent:#Intent;scheme=petrolshare${props};package=com.rsnfreud.PetrolShare;end` :
+            `intent:#Intent;scheme=petrolshare${props.replace("?", ":")};package=com.rsnfreud.PetrolShare;end` :
             "https://petrolshare.freud-online.co.uk" + props
         const isIos = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
     </script>
