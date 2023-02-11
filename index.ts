@@ -253,10 +253,10 @@ fastify.get<{ Querystring: { authenticationKey: string } }>('/api/group/get-memb
 
     const groupID = await retrieveGroupID(query['authenticationKey'])
 
-    const res = await dbQuery('SELECT fullName FROM users WHERE groupID=?', [groupID])
+    const res = await dbQuery('SELECT fullName, userID FROM users WHERE groupID=?', [groupID])
     if (!res) return
 
-    reply.send(res.map(e => e.fullName))
+    reply.send(res)
 })
 
 fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/user/change-group', async (request, reply) => {

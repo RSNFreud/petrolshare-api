@@ -432,12 +432,12 @@ fastify.get('/api/group/get-members', function (request, reply) { return __await
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 1:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery('SELECT fullName, userID FROM users WHERE groupID=?', [groupID])];
             case 2:
                 res = _a.sent();
                 if (!res)
                     return [2 /*return*/];
-                reply.send(res.map(function (e) { return e.fullName; }));
+                reply.send(res);
                 return [2 /*return*/];
         }
     });
