@@ -420,6 +420,28 @@ fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 
         }
     });
 }); });
+fastify.get('/api/group/get-members', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, groupID, res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+            case 1:
+                groupID = _a.sent();
+                return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE groupID=?', [groupID])];
+            case 2:
+                res = _a.sent();
+                if (!res)
+                    return [2 /*return*/];
+                reply.send(res.map(function (e) { return e.fullName; }));
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.post('/api/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results;
     return __generator(this, function (_a) {
