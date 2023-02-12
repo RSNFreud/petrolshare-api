@@ -1077,7 +1077,7 @@ fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(v
     });
 }); });
 fastify.post('/api/invoices/assign', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, userID, data, _a, _b, _c, results, totalDistance, pricePerLiter, litersPerKm, newDistance, unidentified, newUnidentified;
+    var body, userID, data, _a, _b, _c, results, totalDistance, pricePerLiter, litersPerKm, newDistance, unidentified, newUnidentified, fullName;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
@@ -1105,24 +1105,31 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
                 totalDistance = data[0]["totalDistance"];
                 pricePerLiter = data[0]['totalPrice'] / data[0]['litersFilled'];
                 litersPerKm = data[0]['litersFilled'] / totalDistance;
-                if (results[body["userID"]]) {
-                    newDistance = parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance);
-                    unidentified = results['0'];
-                    newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"]);
-                    results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2) });
-                    if (newUnidentified <= 0)
-                        delete results["0"];
-                    else
-                        results['0'] = __assign(__assign({}, results["0"]), { distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2) });
-                }
-                else {
+                newDistance = results[body["userID"]] ? parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance) : parseFloat(body["distance"]);
+                unidentified = results['0'];
+                newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"]);
+                if (!results[body["userID"]]) return [3 /*break*/, 4];
+                results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2) });
+                return [3 /*break*/, 6];
+            case 4: return [4 /*yield*/, retrieveName(body["userID"])];
+            case 5:
+                fullName = _d.sent();
+                if (!fullName)
                     return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
-                }
+                results[body["userID"]] = {
+                    fullName: fullName, distance: newDistance.toFixed(2), paid: false, paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2)
+                };
+                _d.label = 6;
+            case 6:
+                if (newUnidentified <= 0)
+                    delete results["0"];
+                else
+                    results['0'] = __assign(__assign({}, results["0"]), { distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2) });
                 return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data[0]["sessionID"]])];
-            case 4:
+            case 7:
                 _d.sent();
                 return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
-            case 5:
+            case 8:
                 _d.sent();
                 reply.send();
                 return [2 /*return*/];

@@ -719,23 +719,26 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
     const pricePerLiter = data[0]['totalPrice'] / data[0]['litersFilled']
     const litersPerKm = data[0]['litersFilled'] / totalDistance
 
-    if (results[body["userID"]]) {
-        const newDistance = parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance)
-        const unidentified: { fullName: string, distance: string } = results['0']
-        const newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"])
+    const newDistance = results[body["userID"]] ? parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance) : parseFloat(body["distance"])
+    const unidentified: { fullName: string, distance: string } = results['0']
+    const newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"])
 
+    if (results[body["userID"]])
         results[body["userID"]] = {
             ...results[body["userID"]], distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2)
         }
-        if (newUnidentified <= 0) delete results["0"]
-        else
-            results['0'] = {
-                ...results["0"], distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2)
-            }
-
-    } else {
-        return reply.code(400).send('No user found with that ID!')
+    else {
+        const fullName = await retrieveName(body["userID"])
+        if (!fullName) return reply.code(400).send('No user found with that ID!')
+        results[body["userID"]] = {
+            fullName: fullName, distance: newDistance.toFixed(2), paid: false, paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2)
+        }
     }
+    if (newUnidentified <= 0) delete results["0"]
+    else
+        results['0'] = {
+            ...results["0"], distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2)
+        }
 
     await dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data[0]["sessionID"]])
     await dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])
