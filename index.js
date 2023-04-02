@@ -443,9 +443,10 @@ fastify.get('/api/group/get-members', function (request, reply) { return __await
     });
 }); });
 fastify.post('/api/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, results;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var body, results, isPremium, groupMemberCount;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 body = request.body;
                 if (!('authenticationKey' in body) || !('groupID' in body)) {
@@ -453,12 +454,20 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
                 }
                 return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE groupID=?', [body['groupID']])];
             case 1:
-                results = _a.sent();
+                results = _b.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).send("There is no group with that ID")];
-                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])];
+                    return [2 /*return*/, reply.code(400).send("There was no group found with that ID!")];
+                return [4 /*yield*/, dbQuery('SELECT premium FROM groups WHERE groupID=?', [body["groupID"]])];
             case 2:
-                _a.sent();
+                isPremium = (_a = (_b.sent())[0]) === null || _a === void 0 ? void 0 : _a.premium;
+                return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE groupID=?', [body["groupID"]])];
+            case 3:
+                groupMemberCount = _b.sent();
+                if (!isPremium && groupMemberCount.length >= 2)
+                    return [2 /*return*/, reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium in the Manage Group section.")];
+                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])];
+            case 4:
+                _b.sent();
                 return [2 /*return*/];
         }
     });
