@@ -420,6 +420,25 @@ fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 
         }
     });
 }); });
+fastify.post('/api/group/subscribe', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, groupID;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+            case 1:
+                groupID = _a.sent();
+                return [4 /*yield*/, dbQuery('UPDATE groups SET premium=1 WHERE groupID=?', [groupID])];
+            case 2:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.get('/api/group/get-members', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, groupID, res;
     return __generator(this, function (_a) {

@@ -244,6 +244,18 @@ fastify.get<{ Querystring: { authenticationKey: string } }>('/api/group/get', as
     reply.send(res[0])
 })
 
+fastify.post<{ Body: { authenticationKey: string } }>('/api/group/subscribe', async (request, reply) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const groupID = await retrieveGroupID(body['authenticationKey'])
+
+    await dbQuery('UPDATE groups SET premium=1 WHERE groupID=?', [groupID])
+})
+
 fastify.get<{ Querystring: { authenticationKey: string } }>('/api/group/get-members', async (request, reply) => {
     const { query } = request
 
