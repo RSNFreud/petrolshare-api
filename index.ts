@@ -440,25 +440,43 @@ fastify.post<{ Body: { authenticationKey: string, distance: string, userID: stri
         return reply.code(400).send('Missing required field!')
     }
 
-    const userData = await dbQuery('SELECT fullName, groupID FROM users WHERE authenticationKey=?',[ body["authenticationKey"]])
+    const userData = await dbQuery('SELECT fullName, groupID FROM users WHERE authenticationKey=?', [body["authenticationKey"]])
     if (!userData.length) return reply.code(400).send('This user does not exist!')
     const sessionID = await retrieveSessionID(userData[0].groupID)
     if (!sessionID) return reply.code(400).send('This user does not exist!')
 
-    const groupData = await dbQuery('SELECT distance FROM groups WHERE groupID=?',[userData[0].groupID])
+    const groupData = await dbQuery('SELECT distance FROM groups WHERE groupID=?', [userData[0].groupID])
 
     const user = await dbQuery('SELECT notificationKey FROM users WHERE userID=?', [body["userID"]])
     if (!user.length) return reply.code(400).send('This user does not exist!')
-    
-    sendNotification([{notificationKey:user[0].notificationKey}], `${userData[0].fullName} has requested to add the distance of ${body["distance"]}${groupData[0].distance} to your account! Click on this notification to respond`)
+
+    sendNotification([{ notificationKey: user[0].notificationKey }], `${userData[0].fullName} has requested to add the distance of ${body["distance"]}${groupData[0].distance} to your account! Click on this notification to respond`)
 
     try {
-        await dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved) VALUES(?,?,?,?,0)', [body["userID"], body["distance"], Date.now(), sessionID])
+        await dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved, assignedBy) VALUES(?,?,?,?,0,?)', [body["userID"], body["distance"], Date.now(), sessionID, body["userID"]])
     } catch (err) {
         console.log(err);
     }
 
     reply.code(200)
+})
+fastify.get<{ Querystring: { authenticationKey: string } }>('/api/distance/check-distance', async (request, reply) => {
+    const { query } = request
+
+    if (!query || !('authenticationKey' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userData = await dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [query["authenticationKey"]])
+    if (!userData.length) return reply.code(400).send('This user does not exist!')
+    const sessionID = await retrieveSessionID(userData[0].groupID)
+    if (!sessionID) return reply.code(400).send('This user does not exist!')
+
+    const groupData = await dbQuery('SELECT distance, assignedBy FROM logs WHERE sessionID=? AND approved=0', [sessionID])
+
+    if (groupData.length) {
+        reply.send({ distance: groupData[0].distance, assignedBy: await retrieveName(groupData[0].assignedBy) })
+    } else reply.code(200)
 })
 
 // LOGS
@@ -847,15 +865,15 @@ fastify.get<{ Querystring: { code: string } }>('/test', async (request, reply) =
 
 // NOTIFY
 
-const sendNotification = async (notifKeys: Array<{notificationKey:string}>, message: string, route?: { route: string, invoiceID?: number }) => {
+const sendNotification = async (notifKeys: Array<{ notificationKey: string }>, message: string, route?: { route: string, invoiceID?: number }) => {
     let expo = new Expo({})
 
     if (!notifKeys) return
     let messages = [];
 
-    for (let pushToken of notifKeys) {        
+    for (let pushToken of notifKeys) {
         console.log(pushToken);
-        
+
         if (!pushToken["notificationKey"]) continue
 
         // // Check that all your push tokens appear to be valid Expo push tokens
@@ -871,7 +889,7 @@ const sendNotification = async (notifKeys: Array<{notificationKey:string}>, mess
             data: route && { route: route.route, invoiceID: route.invoiceID },
         })
     }
-    
+
     if (!messages) return
     let chunks = expo.chunkPushNotifications(messages);
     let tickets = [];
@@ -880,7 +898,7 @@ const sendNotification = async (notifKeys: Array<{notificationKey:string}>, mess
         for (let chunk of chunks) {
             try {
                 console.log('Sending notification...');
-                
+
                 let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
                 tickets.push(...ticketChunk);
             } catch (error) {

@@ -761,7 +761,7 @@ fastify.post('/api/distance/assign', function (request, reply) { return __awaite
                 _a.label = 5;
             case 5:
                 _a.trys.push([5, 7, , 8]);
-                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved) VALUES(?,?,?,?,0)', [body["userID"], body["distance"], Date.now(), sessionID])];
+                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved, assignedBy) VALUES(?,?,?,?,0,?)', [body["userID"], body["distance"], Date.now(), sessionID, body["userID"]])];
             case 6:
                 _a.sent();
                 return [3 /*break*/, 8];
@@ -772,6 +772,43 @@ fastify.post('/api/distance/assign', function (request, reply) { return __awaite
             case 8:
                 reply.code(200);
                 return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get('/api/distance/check-distance', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, userData, sessionID, groupData, _a, _b;
+    var _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0:
+                query = request.query;
+                if (!query || !('authenticationKey' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [query["authenticationKey"]])];
+            case 1:
+                userData = _d.sent();
+                if (!userData.length)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                return [4 /*yield*/, retrieveSessionID(userData[0].groupID)];
+            case 2:
+                sessionID = _d.sent();
+                if (!sessionID)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                return [4 /*yield*/, dbQuery('SELECT distance, assignedBy FROM logs WHERE sessionID=? AND approved=0', [sessionID])];
+            case 3:
+                groupData = _d.sent();
+                if (!groupData.length) return [3 /*break*/, 5];
+                _b = (_a = reply).send;
+                _c = { distance: groupData[0].distance };
+                return [4 /*yield*/, retrieveName(groupData[0].assignedBy)];
+            case 4:
+                _b.apply(_a, [(_c.assignedBy = _d.sent(), _c)]);
+                return [3 /*break*/, 6];
+            case 5:
+                reply.code(200);
+                _d.label = 6;
+            case 6: return [2 /*return*/];
         }
     });
 }); });
