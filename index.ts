@@ -460,6 +460,46 @@ fastify.post<{ Body: { authenticationKey: string, distance: string, userID: stri
 
     reply.code(200)
 })
+
+fastify.post<{ Body: { authenticationKey: string, logID: string } }>('/api/distance/dismiss', async (request, reply) => {
+    const { body } = request
+
+    if (!body || !('logID' in body) || !('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userData = retrieveID(body["authenticationKey"])
+    if (!userData) return reply.code(400).send('This user does not exist!')
+
+    try {
+        await dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])
+    } catch (err) {
+        console.log(err);
+    }
+
+    reply.code(200)
+})
+
+fastify.post<{ Body: { authenticationKey: string, logID: string } }>('/api/distance/approve', async (request, reply) => {
+    const { body } = request
+
+    if (!body || !('logID' in body) || !('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userData = retrieveID(body["authenticationKey"])
+    if (!userData) return reply.code(400).send('This user does not exist!')
+
+    try {
+        await dbQuery('UPDATE logs SET approved=1 WHERE logID=?', [body["logID"]])
+    } catch (err) {
+        console.log(err);
+    }
+
+    reply.code(200)
+})
+
+
 fastify.get<{ Querystring: { authenticationKey: string } }>('/api/distance/check-distance', async (request, reply) => {
     const { query } = request
 
@@ -472,10 +512,10 @@ fastify.get<{ Querystring: { authenticationKey: string } }>('/api/distance/check
     const sessionID = await retrieveSessionID(userData[0].groupID)
     if (!sessionID) return reply.code(400).send('This user does not exist!')
 
-    const groupData = await dbQuery('SELECT distance, assignedBy FROM logs WHERE sessionID=? AND approved=0', [sessionID])
+    const groupData = await dbQuery('SELECT distance, assignedBy, logID FROM logs WHERE sessionID=? AND approved=0', [sessionID])
 
     if (groupData.length) {
-        reply.send({ distance: groupData[0].distance, assignedBy: await retrieveName(groupData[0].assignedBy) })
+        reply.send({ distance: groupData[0].distance, assignedBy: await retrieveName(groupData[0].assignedBy), id: groupData[0].logID })
     } else reply.code(200)
 })
 

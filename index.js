@@ -775,6 +775,64 @@ fastify.post('/api/distance/assign', function (request, reply) { return __awaite
         }
     });
 }); });
+fastify.post('/api/distance/dismiss', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userData, err_4;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('logID' in body) || !('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                userData = retrieveID(body["authenticationKey"]);
+                if (!userData)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])];
+            case 2:
+                _a.sent();
+                return [3 /*break*/, 4];
+            case 3:
+                err_4 = _a.sent();
+                console.log(err_4);
+                return [3 /*break*/, 4];
+            case 4:
+                reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/api/distance/approve', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userData, err_5;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('logID' in body) || !('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                userData = retrieveID(body["authenticationKey"]);
+                if (!userData)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, dbQuery('UPDATE logs SET approved=1 WHERE logID=?', [body["logID"]])];
+            case 2:
+                _a.sent();
+                return [3 /*break*/, 4];
+            case 3:
+                err_5 = _a.sent();
+                console.log(err_5);
+                return [3 /*break*/, 4];
+            case 4:
+                reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.get('/api/distance/check-distance', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userData, sessionID, groupData, _a, _b;
     var _c;
@@ -795,7 +853,7 @@ fastify.get('/api/distance/check-distance', function (request, reply) { return _
                 sessionID = _d.sent();
                 if (!sessionID)
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                return [4 /*yield*/, dbQuery('SELECT distance, assignedBy FROM logs WHERE sessionID=? AND approved=0', [sessionID])];
+                return [4 /*yield*/, dbQuery('SELECT distance, assignedBy, logID FROM logs WHERE sessionID=? AND approved=0', [sessionID])];
             case 3:
                 groupData = _d.sent();
                 if (!groupData.length) return [3 /*break*/, 5];
@@ -803,7 +861,7 @@ fastify.get('/api/distance/check-distance', function (request, reply) { return _
                 _c = { distance: groupData[0].distance };
                 return [4 /*yield*/, retrieveName(groupData[0].assignedBy)];
             case 4:
-                _b.apply(_a, [(_c.assignedBy = _d.sent(), _c)]);
+                _b.apply(_a, [(_c.assignedBy = _d.sent(), _c.id = groupData[0].logID, _c)]);
                 return [3 /*break*/, 6];
             case 5:
                 reply.code(200);
@@ -1447,7 +1505,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
 }); };
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var err_4;
+    var err_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -1458,8 +1516,8 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.log('Listening to traffic on 3434');
                 return [3 /*break*/, 3];
             case 2:
-                err_4 = _a.sent();
-                fastify.log.error(err_4);
+                err_6 = _a.sent();
+                fastify.log.error(err_6);
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
