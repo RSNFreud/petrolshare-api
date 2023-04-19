@@ -757,7 +757,7 @@ fastify.post('/api/distance/assign', function (request, reply) { return __awaite
                 user = _a.sent();
                 if (!user.length)
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                sendNotification([{ notificationKey: user[0].notificationKey }], userData[0].fullName + " has requested to add the distance of " + body["distance"] + groupData[0].distance + " to your account! Click on this notification to respond");
+                sendNotification([{ notificationKey: user[0].notificationKey }], userData[0].fullName + " has requested to add the distance of " + body["distance"] + groupData[0].distance + " to your account! Click on this notification to respond", { route: 'Dashboard' });
                 _a.label = 5;
             case 5:
                 _a.trys.push([5, 7, , 8]);

@@ -450,7 +450,7 @@ fastify.post<{ Body: { authenticationKey: string, distance: string, userID: stri
     const user = await dbQuery('SELECT notificationKey FROM users WHERE userID=?', [body["userID"]])
     if (!user.length) return reply.code(400).send('This user does not exist!')
 
-    sendNotification([{ notificationKey: user[0].notificationKey }], `${userData[0].fullName} has requested to add the distance of ${body["distance"]}${groupData[0].distance} to your account! Click on this notification to respond`)
+    sendNotification([{ notificationKey: user[0].notificationKey }], `${userData[0].fullName} has requested to add the distance of ${body["distance"]}${groupData[0].distance} to your account! Click on this notification to respond`, { route: 'Dashboard' })
 
     try {
         await dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved, assignedBy) VALUES(?,?,?,?,0,?)', [body["userID"], body["distance"], Date.now(), sessionID, body["userID"]])
