@@ -387,7 +387,7 @@ fastify.get<{ Querystring: { authenticationKey: string } }>('/api/distance/get',
     const userID = await retrieveID(query['authenticationKey'])
     if (!userID) return reply.code(400).send('No user found!')
 
-    const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=?', [userID, await retrieveGroupID(query['authenticationKey'])])
+    const results = await dbQuery('SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1', [userID, await retrieveGroupID(query['authenticationKey'])])
 
     if (!results.length) return reply.send(0)
 
@@ -426,6 +426,34 @@ fastify.post<{ Body: { authenticationKey: string, distance: string } }>('/api/di
 
     try {
         await dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])
+    } catch (err) {
+        console.log(err);
+    }
+
+    reply.code(200)
+})
+
+fastify.post<{ Body: { authenticationKey: string, distance: string, userID: string } }>('/api/distance/assign', async (request, reply) => {
+    const { body } = request
+
+    if (!body || !('distance' in body) || !('authenticationKey' in body) || !('userID' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const userData = await dbQuery('SELECT fullName, groupID FROM users WHERE authenticationKey=?',[ body["authenticationKey"]])
+    if (!userData.length) return reply.code(400).send('This user does not exist!')
+    const sessionID = await retrieveSessionID(userData[0].groupID)
+    if (!sessionID) return reply.code(400).send('This user does not exist!')
+
+    const groupData = await dbQuery('SELECT distance FROM groups WHERE groupID=?',[userData[0].groupID])
+
+    const user = await dbQuery('SELECT notificationKey FROM users WHERE userID=?', [body["userID"]])
+    if (!user.length) return reply.code(400).send('This user does not exist!')
+    
+    sendNotification([{notificationKey:user[0].notificationKey}], `${userData[0].fullName} has requested to add the distance of ${body["distance"]}${groupData[0].distance} to your account! Click on this notification to respond`)
+
+    try {
+        await dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved) VALUES(?,?,?,?,0)', [body["userID"], body["distance"], Date.now(), sessionID])
     } catch (err) {
         console.log(err);
     }
@@ -819,13 +847,15 @@ fastify.get<{ Querystring: { code: string } }>('/test', async (request, reply) =
 
 // NOTIFY
 
-const sendNotification = async (notifKeys: Array<any>, message: string, route?: { route: string, invoiceID?: number }) => {
+const sendNotification = async (notifKeys: Array<{notificationKey:string}>, message: string, route?: { route: string, invoiceID?: number }) => {
     let expo = new Expo({})
 
     if (!notifKeys) return
     let messages = [];
 
-    for (let pushToken of notifKeys) {
+    for (let pushToken of notifKeys) {        
+        console.log(pushToken);
+        
         if (!pushToken["notificationKey"]) continue
 
         // // Check that all your push tokens appear to be valid Expo push tokens
@@ -841,6 +871,7 @@ const sendNotification = async (notifKeys: Array<any>, message: string, route?: 
             data: route && { route: route.route, invoiceID: route.invoiceID },
         })
     }
+    
     if (!messages) return
     let chunks = expo.chunkPushNotifications(messages);
     let tickets = [];
@@ -848,6 +879,8 @@ const sendNotification = async (notifKeys: Array<any>, message: string, route?: 
 
         for (let chunk of chunks) {
             try {
+                console.log('Sending notification...');
+                
                 let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
                 tickets.push(...ticketChunk);
             } catch (error) {

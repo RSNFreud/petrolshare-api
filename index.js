@@ -654,7 +654,7 @@ fastify.get('/api/distance/get', function (request, reply) { return __awaiter(vo
                 if (!userID)
                     return [2 /*return*/, reply.code(400).send('No user found!')];
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=?'];
+                _b = ['SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1'];
                 _c = [userID];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
@@ -725,6 +725,51 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
                 console.log(err_2);
                 return [3 /*break*/, 7];
             case 7:
+                reply.code(200);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.post('/api/distance/assign', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userData, sessionID, groupData, user, err_3;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('distance' in body) || !('authenticationKey' in body) || !('userID' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT fullName, groupID FROM users WHERE authenticationKey=?', [body["authenticationKey"]])];
+            case 1:
+                userData = _a.sent();
+                if (!userData.length)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                return [4 /*yield*/, retrieveSessionID(userData[0].groupID)];
+            case 2:
+                sessionID = _a.sent();
+                if (!sessionID)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                return [4 /*yield*/, dbQuery('SELECT distance FROM groups WHERE groupID=?', [userData[0].groupID])];
+            case 3:
+                groupData = _a.sent();
+                return [4 /*yield*/, dbQuery('SELECT notificationKey FROM users WHERE userID=?', [body["userID"]])];
+            case 4:
+                user = _a.sent();
+                if (!user.length)
+                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                sendNotification([{ notificationKey: user[0].notificationKey }], userData[0].fullName + " has requested to add the distance of " + body["distance"] + groupData[0].distance + " to your account! Click on this notification to respond");
+                _a.label = 5;
+            case 5:
+                _a.trys.push([5, 7, , 8]);
+                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved) VALUES(?,?,?,?,0)', [body["userID"], body["distance"], Date.now(), sessionID])];
+            case 6:
+                _a.sent();
+                return [3 /*break*/, 8];
+            case 7:
+                err_3 = _a.sent();
+                console.log(err_3);
+                return [3 /*break*/, 8];
+            case 8:
                 reply.code(200);
                 return [2 /*return*/];
         }
@@ -1259,6 +1304,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
         messages = [];
         for (_i = 0, notifKeys_1 = notifKeys; _i < notifKeys_1.length; _i++) {
             pushToken = notifKeys_1[_i];
+            console.log(pushToken);
             if (!pushToken["notificationKey"])
                 continue;
             // // Check that all your push tokens appear to be valid Expo push tokens
@@ -1290,6 +1336,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 4, , 5]);
+                        console.log('Sending notification...');
                         return [4 /*yield*/, expo.sendPushNotificationsAsync(chunk)];
                     case 3:
                         ticketChunk = _a.sent();
@@ -1363,7 +1410,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
 }); };
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var err_3;
+    var err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -1374,8 +1421,8 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.log('Listening to traffic on 3434');
                 return [3 /*break*/, 3];
             case 2:
-                err_3 = _a.sent();
-                fastify.log.error(err_3);
+                err_4 = _a.sent();
+                fastify.log.error(err_4);
                 process.exit(1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
