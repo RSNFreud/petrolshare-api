@@ -831,7 +831,7 @@ fastify.get('/api/logs/get', function (request, reply) { return __awaiter(void 0
                 if (!sessions)
                     return [2 /*return*/, reply.code(400).send('There are no sessions to be found')];
                 _c = dbQuery;
-                _d = ['SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? ORDER BY l.date DESC'];
+                _d = ['SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? AND l.approved=1 ORDER BY l.date DESC'];
                 return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
             case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
             case 4:
