@@ -277,16 +277,21 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/use
     if (!('authenticationKey' in body) || !('groupID' in body)) {
         return reply.code(400).send('Missing required field!')
     }
-    const results = await dbQuery('SELECT groupID FROM users WHERE groupID=?', [body['groupID']])
+    let groupID = body["groupID"]
+
+    if (groupID.includes('petrolshare.freud-online.co.uk')) {
+        groupID = groupID.split('groupID=')[1]
+    }
+    const results = await dbQuery('SELECT groupID FROM users WHERE groupID=?', [groupID])
 
     if (!results.length) return reply.code(400).send("There was no group found with that ID!")
 
-    const isPremium = (await dbQuery('SELECT premium FROM groups WHERE groupID=?', [body["groupID"]]))[0]?.premium
-    const groupMemberCount = await dbQuery('SELECT fullName FROM users WHERE groupID=?', [body["groupID"]])
+    const isPremium = (await dbQuery('SELECT premium FROM groups WHERE groupID=?', [groupID]))[0]?.premium
+    const groupMemberCount = await dbQuery('SELECT fullName FROM users WHERE groupID=?', [groupID])
 
-    if (!isPremium && groupMemberCount.length >= 2) return reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium in the Manage Group section.")
+    if (!isPremium && groupMemberCount.length >= 2) return reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")
 
-    await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])
+    await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])
 
 })
 
