@@ -293,6 +293,8 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/use
 
     await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])
 
+    reply.send(results[0]['groupID'])
+
 })
 
 fastify.post<{ Body: { authenticationKey: string, newEmail: string } }>('/api/user/change-email', async (request, reply) => {
