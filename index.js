@@ -491,6 +491,7 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
                 return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])];
             case 4:
                 _b.sent();
+                reply.send(results[0]['groupID']);
                 return [2 /*return*/];
         }
     });
