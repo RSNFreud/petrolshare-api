@@ -162,6 +162,17 @@ const deleteEmptyGroups = async () => {
     })
 }
 
+const checkIfLast = async (authenticationKey: string) => {
+    const groupID = await retrieveGroupID(authenticationKey)
+    if (!groupID) return
+
+    const lastUser = (await dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])).length
+
+    if (lastUser === 1) {
+        return true
+    } else return false
+}
+
 setInterval(() => {
     deleteEmptyGroups()
 }, 86400000)
@@ -313,18 +324,20 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/use
     if (groupID.includes('petrolshare.freud-online.co.uk')) {
         groupID = groupID.split('groupID=')[1]
     }
-    const results = await dbQuery('SELECT groupID FROM groups WHERE groupID=?', [groupID])
+    const results = await dbQuery('SELECT groupID, premium FROM groups WHERE groupID=?', [groupID])
 
     if (!results.length) return reply.code(400).send("There was no group found with that ID!")
 
-    const isPremium = (await dbQuery('SELECT premium FROM groups WHERE groupID=?', [groupID]))[0]?.premium
-    const groupMemberCount = await dbQuery('SELECT fullName FROM users WHERE groupID=?', [groupID])
+    const isPremium = results[0]?.premium
+    const groupMemberCount = await dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])
+    const lastInGroup = await checkIfLast(body['authenticationKey'])
+    console.log(lastInGroup);
 
     if (!isPremium && groupMemberCount.length >= 2) return reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")
 
     await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])
 
-    reply.send(results[0]['groupID'])
+    reply.send({ groupID: results[0]['groupID'], message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' })
 
 })
 

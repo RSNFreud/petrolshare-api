@@ -294,6 +294,27 @@ var deleteEmptyGroups = function () { return __awaiter(void 0, void 0, void 0, f
         }
     });
 }); };
+var checkIfLast = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
+    var groupID, lastUser;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, retrieveGroupID(authenticationKey)];
+            case 1:
+                groupID = _a.sent();
+                if (!groupID)
+                    return [2 /*return*/];
+                return [4 /*yield*/, dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])];
+            case 2:
+                lastUser = (_a.sent()).length;
+                if (lastUser === 1) {
+                    return [2 /*return*/, true];
+                }
+                else
+                    return [2 /*return*/, false];
+                return [2 /*return*/];
+        }
+    });
+}); };
 setInterval(function () {
     deleteEmptyGroups();
 }, 86400000);
@@ -515,7 +536,7 @@ fastify.get('/api/group/get-members', function (request, reply) { return __await
     });
 }); });
 fastify.post('/api/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, groupID, results, isPremium, groupMemberCount;
+    var body, groupID, results, isPremium, groupMemberCount, lastInGroup;
     var _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
@@ -528,23 +549,25 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
                 if (groupID.includes('petrolshare.freud-online.co.uk')) {
                     groupID = groupID.split('groupID=')[1];
                 }
-                return [4 /*yield*/, dbQuery('SELECT groupID FROM groups WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery('SELECT groupID, premium FROM groups WHERE groupID=?', [groupID])];
             case 1:
                 results = _b.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There was no group found with that ID!")];
-                return [4 /*yield*/, dbQuery('SELECT premium FROM groups WHERE groupID=?', [groupID])];
+                isPremium = (_a = results[0]) === null || _a === void 0 ? void 0 : _a.premium;
+                return [4 /*yield*/, dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])];
             case 2:
-                isPremium = (_a = (_b.sent())[0]) === null || _a === void 0 ? void 0 : _a.premium;
-                return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE groupID=?', [groupID])];
-            case 3:
                 groupMemberCount = _b.sent();
+                return [4 /*yield*/, checkIfLast(body['authenticationKey'])];
+            case 3:
+                lastInGroup = _b.sent();
+                console.log(lastInGroup);
                 if (!isPremium && groupMemberCount.length >= 2)
                     return [2 /*return*/, reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")];
                 return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])];
             case 4:
                 _b.sent();
-                reply.send(results[0]['groupID']);
+                reply.send({ groupID: results[0]['groupID'], message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' });
                 return [2 /*return*/];
         }
     });
