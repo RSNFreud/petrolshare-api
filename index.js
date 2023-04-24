@@ -201,6 +201,16 @@ var generateTempPassword = function () {
     }
     return result;
 };
+var generateGroupID = function () {
+    var result = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for (var i = 0; i < 10; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            charactersLength));
+    }
+    return result;
+};
 var retrieveGroupID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -251,6 +261,42 @@ var retrieveName = function (userID) { return __awaiter(void 0, void 0, void 0, 
         }
     });
 }); };
+var deleteEmptyGroups = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var currentGroups, allGroups;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, dbQuery('SELECT u.groupID, g.premium FROM users u LEFT JOIN groups g USING (groupID)')];
+            case 1:
+                currentGroups = _a.sent();
+                return [4 /*yield*/, dbQuery('SELECT groupID, premium FROM groups')];
+            case 2:
+                allGroups = _a.sent();
+                allGroups.map(function (_a) {
+                    var groupID = _a.groupID, premium = _a.premium;
+                    return __awaiter(void 0, void 0, void 0, function () {
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    if (currentGroups.filter(function (_a) {
+                                        var id = _a.groupID;
+                                        return id === groupID;
+                                    }).length || premium)
+                                        return [2 /*return*/];
+                                    return [4 /*yield*/, dbQuery('DELETE FROM groups WHERE groupID=?', [groupID])];
+                                case 1:
+                                    _b.sent();
+                                    return [2 /*return*/];
+                            }
+                        });
+                    });
+                });
+                return [2 /*return*/];
+        }
+    });
+}); };
+setInterval(function () {
+    deleteEmptyGroups();
+}, 86400000);
 // USER
 fastify.post('/api/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, code, _a;
@@ -361,7 +407,7 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
     });
 }); });
 fastify.post('/api/group/create', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body;
+    var body, groupIDExists, groupID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -369,12 +415,19 @@ fastify.post('/api/group/create', function (request, reply) { return __awaiter(v
                 if (!('authenticationKey' in body) || !('groupID' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery('SELECT null FROM groups WHERE groupID=?', [body['groupID']])];
             case 1:
-                _a.sent();
-                return [4 /*yield*/, dbInsert('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])];
+                groupIDExists = _a.sent();
+                groupID = body['groupID'];
+                if (groupIDExists.length)
+                    groupID = generateGroupID();
+                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [groupID, body['authenticationKey']])];
             case 2:
                 _a.sent();
+                return [4 /*yield*/, dbInsert('INSERT INTO groups (groupID) VALUES (?)', [groupID])];
+            case 3:
+                _a.sent();
+                reply.send(groupID);
                 return [2 /*return*/];
         }
     });
@@ -475,7 +528,7 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
                 if (groupID.includes('petrolshare.freud-online.co.uk')) {
                     groupID = groupID.split('groupID=')[1];
                 }
-                return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery('SELECT groupID FROM groups WHERE groupID=?', [groupID])];
             case 1:
                 results = _b.sent();
                 if (!results.length)

@@ -116,6 +116,17 @@ const generateTempPassword = () => {
     return result
 }
 
+const generateGroupID = () => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for (var i = 0; i < 10; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            charactersLength));
+    }
+    return result;
+}
+
 const retrieveGroupID = async (authenticationKey: string) => {
     return (await dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey]))[0].groupID
 }
@@ -140,6 +151,20 @@ const retrieveName = async (userID: string) => {
     if (!res.length) return ""
     return res[0].fullName as string
 }
+
+const deleteEmptyGroups = async () => {
+    const currentGroups = await dbQuery('SELECT u.groupID, g.premium FROM users u LEFT JOIN groups g USING (groupID)')
+    const allGroups = await dbQuery('SELECT groupID, premium FROM groups')
+
+    allGroups.map(async ({ groupID, premium }) => {
+        if (currentGroups.filter(({ groupID: id }) => id === groupID).length || premium) return
+        await dbQuery('DELETE FROM groups WHERE groupID=?', [groupID])
+    })
+}
+
+setInterval(() => {
+    deleteEmptyGroups()
+}, 86400000)
 
 // USER
 fastify.post<{ Body: { emailAddress: string, password: string } }>('/api/user/login', async (request, reply) => {
@@ -214,8 +239,14 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/gro
     if (!('authenticationKey' in body) || !('groupID' in body)) {
         return reply.code(400).send('Missing required field!')
     }
-    await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [body['groupID'], body['authenticationKey']])
-    await dbInsert('INSERT INTO groups (groupID) VALUES (?)', [body['groupID']])
+
+    const groupIDExists = await dbQuery('SELECT null FROM groups WHERE groupID=?', [body['groupID']])
+    let groupID = body['groupID']
+    if (groupIDExists.length) groupID = generateGroupID()
+
+    await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [groupID, body['authenticationKey']])
+    await dbInsert('INSERT INTO groups (groupID) VALUES (?)', [groupID])
+    reply.send(groupID)
 })
 
 fastify.post<{ Body: { authenticationKey: string, distance: string, petrol: string, currency: string } }>('/api/group/update', async (request, reply) => {
@@ -282,7 +313,7 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/use
     if (groupID.includes('petrolshare.freud-online.co.uk')) {
         groupID = groupID.split('groupID=')[1]
     }
-    const results = await dbQuery('SELECT groupID FROM users WHERE groupID=?', [groupID])
+    const results = await dbQuery('SELECT groupID FROM groups WHERE groupID=?', [groupID])
 
     if (!results.length) return reply.code(400).send("There was no group found with that ID!")
 
