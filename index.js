@@ -428,26 +428,32 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
     });
 }); });
 fastify.post('/api/group/create', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, groupIDExists, groupID;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var body, lastInGroup, groupIDExists, groupID, isPremium;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 body = request.body;
                 if (!('authenticationKey' in body) || !('groupID' in body)) {
                     return [2 /*return*/, reply.code(400).send('Missing required field!')];
                 }
-                return [4 /*yield*/, dbQuery('SELECT null FROM groups WHERE groupID=?', [body['groupID']])];
+                return [4 /*yield*/, checkIfLast(body['authenticationKey'])];
             case 1:
-                groupIDExists = _a.sent();
+                lastInGroup = _b.sent();
+                return [4 /*yield*/, dbQuery('SELECT premium FROM groups WHERE groupID=?', [body['groupID']])];
+            case 2:
+                groupIDExists = _b.sent();
                 groupID = body['groupID'];
                 if (groupIDExists.length)
                     groupID = generateGroupID();
+                isPremium = groupIDExists.length ? false : (_a = groupIDExists[0]) === null || _a === void 0 ? void 0 : _a.premium;
                 return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [groupID, body['authenticationKey']])];
-            case 2:
-                _a.sent();
-                return [4 /*yield*/, dbInsert('INSERT INTO groups (groupID) VALUES (?)', [groupID])];
             case 3:
-                _a.sent();
+                _b.sent();
+                return [4 /*yield*/, dbInsert('INSERT INTO groups (groupID) VALUES (?)', [groupID])];
+            case 4:
+                _b.sent();
+                reply.send({ groupID: groupID, message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' });
                 reply.send(groupID);
                 return [2 /*return*/];
         }

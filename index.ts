@@ -251,12 +251,15 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/gro
         return reply.code(400).send('Missing required field!')
     }
 
-    const groupIDExists = await dbQuery('SELECT null FROM groups WHERE groupID=?', [body['groupID']])
+    const lastInGroup = await checkIfLast(body['authenticationKey'])
+    const groupIDExists = await dbQuery('SELECT premium FROM groups WHERE groupID=?', [body['groupID']])
     let groupID = body['groupID']
     if (groupIDExists.length) groupID = generateGroupID()
+    const isPremium = groupIDExists.length ? false : groupIDExists[0]?.premium
 
     await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [groupID, body['authenticationKey']])
     await dbInsert('INSERT INTO groups (groupID) VALUES (?)', [groupID])
+    reply.send({ groupID: groupID, message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' })
     reply.send(groupID)
 })
 
