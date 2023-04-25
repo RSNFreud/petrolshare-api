@@ -1490,7 +1490,6 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
         messages = [];
         for (_i = 0, notifKeys_1 = notifKeys; _i < notifKeys_1.length; _i++) {
             pushToken = notifKeys_1[_i];
-            console.log(pushToken);
             if (!pushToken["notificationKey"])
                 continue;
             // // Check that all your push tokens appear to be valid Expo push tokens

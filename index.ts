@@ -964,8 +964,6 @@ const sendNotification = async (notifKeys: Array<{ notificationKey: string }>, m
     let messages = [];
 
     for (let pushToken of notifKeys) {
-        console.log(pushToken);
-
         if (!pushToken["notificationKey"]) continue
 
         // // Check that all your push tokens appear to be valid Expo push tokens
