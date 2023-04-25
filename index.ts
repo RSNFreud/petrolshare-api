@@ -331,17 +331,15 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/use
 
     if (!results.length) return reply.code(400).send("There was no group found with that ID!")
 
-    const isPremium = results[0]?.premium
+    const isPremium = (await dbQuery('SELECT premium FROM groups WHERE groupID=?', [await retrieveGroupID(body["authenticationKey"])]))[0]?.premium
     const groupMemberCount = await dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])
     const lastInGroup = await checkIfLast(body['authenticationKey'])
-    console.log(lastInGroup);
 
     if (!isPremium && groupMemberCount.length >= 2) return reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")
 
     await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])
 
     reply.send({ groupID: results[0]['groupID'], message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' })
-
 })
 
 fastify.post<{ Body: { authenticationKey: string, newEmail: string } }>('/api/user/change-email', async (request, reply) => {

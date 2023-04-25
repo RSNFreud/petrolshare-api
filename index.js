@@ -542,10 +542,10 @@ fastify.get('/api/group/get-members', function (request, reply) { return __await
     });
 }); });
 fastify.post('/api/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, groupID, results, isPremium, groupMemberCount, lastInGroup;
-    var _a;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var body, groupID, results, isPremium, _a, _b, groupMemberCount, lastInGroup;
+    var _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 body = request.body;
                 if (!('authenticationKey' in body) || !('groupID' in body)) {
@@ -557,22 +557,26 @@ fastify.post('/api/user/change-group', function (request, reply) { return __awai
                 }
                 return [4 /*yield*/, dbQuery('SELECT groupID, premium FROM groups WHERE groupID=?', [groupID])];
             case 1:
-                results = _b.sent();
+                results = _d.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There was no group found with that ID!")];
-                isPremium = (_a = results[0]) === null || _a === void 0 ? void 0 : _a.premium;
-                return [4 /*yield*/, dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])];
-            case 2:
-                groupMemberCount = _b.sent();
-                return [4 /*yield*/, checkIfLast(body['authenticationKey'])];
+                _a = dbQuery;
+                _b = ['SELECT premium FROM groups WHERE groupID=?'];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_d.sent()]]))];
             case 3:
-                lastInGroup = _b.sent();
-                console.log(lastInGroup);
+                isPremium = (_c = (_d.sent())[0]) === null || _c === void 0 ? void 0 : _c.premium;
+                return [4 /*yield*/, dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])];
+            case 4:
+                groupMemberCount = _d.sent();
+                return [4 /*yield*/, checkIfLast(body['authenticationKey'])];
+            case 5:
+                lastInGroup = _d.sent();
                 if (!isPremium && groupMemberCount.length >= 2)
                     return [2 /*return*/, reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")];
                 return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])];
-            case 4:
-                _b.sent();
+            case 6:
+                _d.sent();
                 reply.send({ groupID: results[0]['groupID'], message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' });
                 return [2 /*return*/];
         }
