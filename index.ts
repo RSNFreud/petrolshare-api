@@ -332,10 +332,11 @@ fastify.post<{ Body: { authenticationKey: string, groupID: string } }>('/api/use
     if (!results.length) return reply.code(400).send("There was no group found with that ID!")
 
     const isPremium = (await dbQuery('SELECT premium FROM groups WHERE groupID=?', [await retrieveGroupID(body["authenticationKey"])]))[0]?.premium
+    const isNewPremium = results[0]?.premium
     const groupMemberCount = await dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])
     const lastInGroup = await checkIfLast(body['authenticationKey'])
 
-    if (!isPremium && groupMemberCount.length >= 2) return reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")
+    if (!isNewPremium && groupMemberCount.length >= 2) return reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")
 
     await dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])
 
