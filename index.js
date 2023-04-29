@@ -360,6 +360,34 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
         }
     });
 }); });
+fastify.post('/api/user/deactivate', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, emailCode, results, _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                body = request.body;
+                if (!('authenticationKey' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, generateEmailCode()];
+            case 1:
+                emailCode = _c.sent();
+                _a = dbQuery;
+                _b = ['SELECT emailAddress FROM users WHERE userID=?'];
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+            case 3:
+                results = _c.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
+                return [4 /*yield*/, dbQuery('UPDATE users SET active=0, verificationCode=? WHERE authenticationKey=?', [emailCode, body['authenticationKey']])];
+            case 4:
+                _c.sent();
+                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivation', "Hi!<br><br>We have received a request to deactivate your account. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/deactivate?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                return [2 /*return*/];
+        }
+    });
+}); });
 fastify.post('/api/notify/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body;
     return __generator(this, function (_a) {
@@ -1471,6 +1499,58 @@ fastify.get('/email/reset-password', function (request, reply) { return __awaite
                 return [4 /*yield*/, reply.view('reset-password.ejs', { password: password })];
             case 4:
                 _c.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get('/email/deactivate', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results, verificationCode;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!query || !('code' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT fullName, emailAddress FROM users WHERE verificationCode=?', [query['code']])];
+            case 1:
+                results = _a.sent();
+                return [4 /*yield*/, generateEmailCode()];
+            case 2:
+                verificationCode = _a.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
+                return [4 /*yield*/, dbInsert('UPDATE users SET active=0, verificationCode=? WHERE verificationCode=?', [verificationCode, query['code']])];
+            case 3:
+                _a.sent();
+                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivated', "Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/activate?code=" + verificationCode + "\" target=\"_blank\">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team");
+                return [4 /*yield*/, reply.sendFile('deactivated.html')];
+            case 4:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get('/email/activate', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!query || !('code' in query)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, dbQuery('SELECT fullName, emailAddress FROM users WHERE verificationCode=?', [query['code']])];
+            case 1:
+                results = _a.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
+                return [4 /*yield*/, dbInsert('UPDATE users SET active=1, verificationCode=NULL WHERE verificationCode=?', [query['code']])];
+            case 2:
+                _a.sent();
+                return [4 /*yield*/, reply.sendFile('activated.html')];
+            case 3:
+                _a.sent();
                 return [2 /*return*/];
         }
     });

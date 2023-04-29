@@ -201,6 +201,20 @@ fastify.post<{ Body: { emailAddress: string, password: string } }>('/api/user/lo
     }
 })
 
+fastify.post<{ Body: { authenticationKey: string } }>('/api/user/deactivate', async (request, reply) => {
+    const { body } = request
+
+    if (!('authenticationKey' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+    const emailCode = await generateEmailCode();
+    const results = await dbQuery('SELECT emailAddress FROM users WHERE userID=?', [await retrieveID(body['authenticationKey'])])
+    if (!results.length) return reply.code(400).send("There is no user with that ID")
+    await dbQuery('UPDATE users SET active=0, verificationCode=? WHERE authenticationKey=?', [emailCode, body['authenticationKey']])
+
+    sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivation', `Hi!<br><br>We have received a request to deactivate your account. Please click <a href="https://petrolshare.freud-online.co.uk/email/deactivate?code=${emailCode}" target="_blank">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team`)
+})
+
 fastify.post<{ Body: { emailAddress: string, notificationKey: string } }>('/api/notify/register', async (request, reply) => {
     const { body } = request
 
@@ -551,7 +565,6 @@ fastify.post<{ Body: { authenticationKey: string, logID: string } }>('/api/dista
 
     reply.code(200)
 })
-
 
 fastify.get<{ Querystring: { authenticationKey: string } }>('/api/distance/check-distance', async (request, reply) => {
     const { query } = request
@@ -950,6 +963,36 @@ fastify.get<{ Querystring: { code: string } }>('/email/reset-password', async (r
     await dbInsert('UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?', [await argon2.hash(password), query['code']])
 
     await reply.view('reset-password.ejs', { password: password })
+})
+
+fastify.get<{ Querystring: { code: string } }>('/email/deactivate', async (request, reply) => {
+    const { query } = request
+
+    if (!query || !('code' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT fullName, emailAddress FROM users WHERE verificationCode=?', [query['code']])
+    const verificationCode = await generateEmailCode()
+    if (!results.length) return reply.code(400).sendFile('fail.html')
+
+    await dbInsert('UPDATE users SET active=0, verificationCode=? WHERE verificationCode=?', [verificationCode, query['code']])
+    sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivated', `Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href="https://petrolshare.freud-online.co.uk/email/activate?code=${verificationCode}" target="_blank">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team`)
+    await reply.sendFile('deactivated.html')
+})
+
+fastify.get<{ Querystring: { code: string } }>('/email/activate', async (request, reply) => {
+    const { query } = request
+
+    if (!query || !('code' in query)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    const results = await dbQuery('SELECT fullName, emailAddress FROM users WHERE verificationCode=?', [query['code']])
+    if (!results.length) return reply.code(400).sendFile('fail.html')
+
+    await dbInsert('UPDATE users SET active=1, verificationCode=NULL WHERE verificationCode=?', [query['code']])
+    await reply.sendFile('activated.html')
 })
 
 fastify.get<{ Querystring: { code: string } }>('/test', async (request, reply) => {
