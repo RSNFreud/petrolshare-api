@@ -335,6 +335,8 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                     return [2 /*return*/, reply.code(400).send('Incorrect username or password.')];
                 if (!results[0]["verified"])
                     return [2 /*return*/, reply.code(400).send('Please verify your account!')];
+                if (!results[0]["active"])
+                    return [2 /*return*/, reply.code(400).send('Your account has been deactivated! Please check your email to reactivate')];
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
                 if (!_b.sent()) return [3 /*break*/, 7];
@@ -728,7 +730,9 @@ fastify.get('/api/user/verify', function (request, reply) { return __awaiter(voi
             case 1:
                 results = _a.sent();
                 if (!results)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                    return [2 /*return*/, reply.code(400).send('Your account session has expired! Please re-login')];
+                if (!results[0]["active"])
+                    return [2 /*return*/, reply.code(400).send('This account has been deactivated. Please check your emails to reactivate!')];
                 reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID });
                 return [2 /*return*/];
         }

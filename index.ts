@@ -188,6 +188,7 @@ fastify.post<{ Body: { emailAddress: string, password: string } }>('/api/user/lo
     if (!(results as Array<any>).length) return reply.code(400).send('Incorrect username or password.')
 
     if (!results[0]["verified"]) return reply.code(400).send('Please verify your account!')
+    if (!results[0]["active"]) return reply.code(400).send('Your account has been deactivated! Please check your email to reactivate')
     if (await argon2.verify(results[0].password, body["password"])) {
         const code = results[0].authenticationKey || await generateCode()
         reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID })
@@ -420,7 +421,8 @@ fastify.get<{ Querystring: { authenticationKey: string } }>('/api/user/verify', 
 
     const results: Array<any> = await dbQuery('SELECT * from users WHERE authenticationKey=?', [query['authenticationKey']])
 
-    if (!results) return reply.code(400).send('No user found!')
+    if (!results) return reply.code(400).send('Your account session has expired! Please re-login')
+    if (!results[0]["active"]) return reply.code(400).send('This account has been deactivated. Please check your emails to reactivate!')
 
     reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID })
 })
