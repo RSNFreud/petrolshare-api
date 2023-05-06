@@ -531,7 +531,7 @@ fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 
     });
 }); });
 fastify.post('/api/group/subscribe', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, groupID;
+    var body, groupID, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -544,7 +544,8 @@ fastify.post('/api/group/subscribe', function (request, reply) { return __awaite
                 groupID = _a.sent();
                 return [4 /*yield*/, dbQuery('UPDATE groups SET premium=1 WHERE groupID=?', [groupID])];
             case 2:
-                _a.sent();
+                res = _a.sent();
+                reply.code(200).send(res.changedRows);
                 return [2 /*return*/];
         }
     });
