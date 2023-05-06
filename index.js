@@ -545,7 +545,7 @@ fastify.post('/api/group/subscribe', function (request, reply) { return __awaite
                 return [4 /*yield*/, dbQuery('UPDATE groups SET premium=1 WHERE groupID=?', [groupID])];
             case 2:
                 res = _a.sent();
-                reply.code(200).send(res.changedRows);
+                reply.code(200).send(res === null || res === void 0 ? void 0 : res.changedRows);
                 return [2 /*return*/];
         }
     });

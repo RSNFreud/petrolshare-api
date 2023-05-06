@@ -314,7 +314,7 @@ fastify.post<{ Body: { authenticationKey: string } }>('/api/group/subscribe', as
     const groupID = await retrieveGroupID(body['authenticationKey'])
 
     const res = await dbQuery('UPDATE groups SET premium=1 WHERE groupID=?', [groupID])
-    reply.code(200).send(res.changedRows)
+    reply.code(200).send(res?.changedRows)
 })
 
 fastify.get<{ Querystring: { authenticationKey: string } }>('/api/group/get-members', async (request, reply) => {
