@@ -46,14 +46,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -61,13 +57,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var fastify_1 = __importDefault(require("fastify"));
 var mysql_1 = __importDefault(require("mysql"));
-require('dotenv').config();
+require("dotenv").config();
 var argon2_1 = __importDefault(require("argon2"));
 var cors_1 = __importDefault(require("@fastify/cors"));
 var nodemailer_1 = __importDefault(require("nodemailer"));
 var expo_server_sdk_1 = __importDefault(require("expo-server-sdk"));
-var fastify = (0, fastify_1.default)({});
-fastify.register(require('@fastify/static'), {
+var fastify = fastify_1.default({});
+fastify.register(require("@fastify/static"), {
     root: __dirname,
 });
 fastify.register(require("@fastify/view"), {
@@ -77,7 +73,10 @@ fastify.register(require("@fastify/view"), {
 });
 fastify.register(cors_1.default, {});
 var conn = mysql_1.default.createConnection({
-    host: process.env.DB_HOST, user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, database: 'petrolshare'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: "petrolshare",
 });
 conn.connect();
 var sendMail = function (address, subject, message) { return __awaiter(void 0, void 0, void 0, function () {
@@ -86,7 +85,7 @@ var sendMail = function (address, subject, message) { return __awaiter(void 0, v
         switch (_a.label) {
             case 0:
                 transporter = nodemailer_1.default.createTransport({
-                    host: 'smtp.gmail.com',
+                    host: "smtp.gmail.com",
                     port: 465,
                     secure: true,
                     auth: {
@@ -109,7 +108,7 @@ var sendMail = function (address, subject, message) { return __awaiter(void 0, v
                 return [3 /*break*/, 4];
             case 3:
                 err_1 = _a.sent();
-                console.log('Google blocked email sending!');
+                console.log("Google blocked email sending!");
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
         }
@@ -120,11 +119,11 @@ function dbQuery(query, parameters) {
         return __generator(this, function (_a) {
             return [2 /*return*/, new Promise(function (res, rej) {
                     try {
-                        conn.query(query, parameters, (function (err, results) {
+                        conn.query(query, parameters, function (err, results) {
                             if (err)
                                 rej(err);
                             res(results);
-                        }));
+                        });
                     }
                     catch (err) {
                         rej(err);
@@ -138,11 +137,11 @@ function dbInsert(query, parameters) {
         return __generator(this, function (_a) {
             return [2 /*return*/, new Promise(function (res, rej) {
                     try {
-                        conn.query(query, parameters, (function (err, results) {
+                        conn.query(query, parameters, function (err, results) {
                             if (err)
                                 rej(err);
                             res(results);
-                        }));
+                        });
                     }
                     catch (err) {
                         rej(err);
@@ -156,16 +155,16 @@ var generateEmailCode = function () { return __awaiter(void 0, void 0, void 0, f
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                result = '';
-                characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                result = "";
+                characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
                 charactersLength = characters.length;
                 for (i = 0; i < 25; i++) {
-                    result += characters.charAt(Math.floor(Math.random() *
-                        charactersLength));
+                    result += characters.charAt(Math.floor(Math.random() * charactersLength));
                 }
-                return [4 /*yield*/, dbQuery('SELECT * from users where verificationCode=?', [result])];
+                return [4 /*yield*/, dbQuery("SELECT * from users where verificationCode=?", [result])];
             case 1:
-                if ((_a.sent()).length)
+                if ((_a.sent())
+                    .length)
                     return [2 /*return*/, generateEmailCode()];
                 return [2 /*return*/, result];
         }
@@ -176,45 +175,45 @@ var generateCode = function () { return __awaiter(void 0, void 0, void 0, functi
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                result = '';
-                characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                result = "";
+                characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
                 charactersLength = characters.length;
                 for (i = 0; i < 25; i++) {
-                    result += characters.charAt(Math.floor(Math.random() *
-                        charactersLength));
+                    result += characters.charAt(Math.floor(Math.random() * charactersLength));
                 }
-                return [4 /*yield*/, dbQuery('SELECT * from users where authenticationKey=?', [result])];
+                return [4 /*yield*/, dbQuery("SELECT * from users where authenticationKey=?", [result])];
             case 1:
-                if ((_a.sent()).length)
+                if ((_a.sent())
+                    .length)
                     return [2 /*return*/, generateCode()];
                 return [2 /*return*/, result];
         }
     });
 }); };
 var generateTempPassword = function () {
-    var result = '';
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*+=';
+    var result = "";
+    var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*+=";
     var charactersLength = characters.length;
     for (var i = 0; i < 10; i++) {
-        result += characters.charAt(Math.floor(Math.random() *
-            charactersLength));
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
 };
 var generateGroupID = function () {
-    var result = '';
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var result = "";
+    var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     var charactersLength = characters.length;
     for (var i = 0; i < 10; i++) {
-        result += characters.charAt(Math.floor(Math.random() *
-            charactersLength));
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
 };
 var retrieveGroupID = function (authenticationKey) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE authenticationKey=?', [authenticationKey])];
+            case 0: return [4 /*yield*/, dbQuery("SELECT groupID FROM users WHERE authenticationKey=?", [
+                    authenticationKey,
+                ])];
             case 1: return [2 /*return*/, (_a.sent())[0].groupID];
         }
     });
@@ -223,11 +222,11 @@ var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, vo
     var res;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true', [groupID])];
+            case 0: return [4 /*yield*/, dbQuery("SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true", [groupID])];
             case 1:
                 res = _a.sent();
                 if (!!res.length) return [3 /*break*/, 3];
-                return [4 /*yield*/, dbInsert('INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)', [Date.now(), groupID, true])];
+                return [4 /*yield*/, dbInsert("INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)", [Date.now(), groupID, true])];
             case 2:
                 res = _a.sent();
                 return [2 /*return*/, res.insertId];
@@ -239,7 +238,7 @@ var retrieveID = function (authenticationKey) { return __awaiter(void 0, void 0,
     var res;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT userID FROM users WHERE authenticationKey=?', [authenticationKey])];
+            case 0: return [4 /*yield*/, dbQuery("SELECT userID FROM users WHERE authenticationKey=?", [authenticationKey])];
             case 1:
                 res = _a.sent();
                 if (!res.length)
@@ -252,7 +251,9 @@ var retrieveName = function (userID) { return __awaiter(void 0, void 0, void 0, 
     var res;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT fullName FROM users WHERE userID=?', [userID])];
+            case 0: return [4 /*yield*/, dbQuery("SELECT fullName FROM users WHERE userID=?", [
+                    userID,
+                ])];
             case 1:
                 res = _a.sent();
                 if (!res.length)
@@ -265,10 +266,10 @@ var deleteEmptyGroups = function () { return __awaiter(void 0, void 0, void 0, f
     var currentGroups, allGroups;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, dbQuery('SELECT u.groupID, g.premium FROM users u LEFT JOIN groups g USING (groupID)')];
+            case 0: return [4 /*yield*/, dbQuery("SELECT u.groupID, g.premium FROM users u LEFT JOIN groups g USING (groupID)")];
             case 1:
                 currentGroups = _a.sent();
-                return [4 /*yield*/, dbQuery('SELECT groupID, premium FROM groups')];
+                return [4 /*yield*/, dbQuery("SELECT groupID, premium FROM groups")];
             case 2:
                 allGroups = _a.sent();
                 allGroups.map(function (_a) {
@@ -280,9 +281,10 @@ var deleteEmptyGroups = function () { return __awaiter(void 0, void 0, void 0, f
                                     if (currentGroups.filter(function (_a) {
                                         var id = _a.groupID;
                                         return id === groupID;
-                                    }).length || premium)
+                                    }).length ||
+                                        premium)
                                         return [2 /*return*/];
-                                    return [4 /*yield*/, dbQuery('DELETE FROM groups WHERE groupID=?', [groupID])];
+                                    return [4 /*yield*/, dbQuery("DELETE FROM groups WHERE groupID=?", [groupID])];
                                 case 1:
                                     _b.sent();
                                     return [2 /*return*/];
@@ -303,7 +305,7 @@ var checkIfLast = function (authenticationKey) { return __awaiter(void 0, void 0
                 groupID = _a.sent();
                 if (!groupID)
                     return [2 /*return*/];
-                return [4 /*yield*/, dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery("SELECT null FROM users WHERE groupID=?", [groupID])];
             case 2:
                 lastUser = (_a.sent()).length;
                 if (lastUser === 1) {
@@ -319,24 +321,26 @@ setInterval(function () {
     deleteEmptyGroups();
 }, 86400000);
 // USER
-fastify.post('/api/user/login', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/login", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, code, _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('password' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("emailAddress" in body) || !("password" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])];
+                return [4 /*yield*/, dbQuery("SELECT * from users WHERE emailAddress=?", [body["emailAddress"]])];
             case 1:
                 results = _b.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).send('Incorrect username or password.')];
+                    return [2 /*return*/, reply.code(400).send("Incorrect username or password.")];
                 if (!results[0]["verified"])
-                    return [2 /*return*/, reply.code(400).send('Please verify your account!')];
+                    return [2 /*return*/, reply.code(400).send("Please verify your account!")];
                 if (!results[0]["active"])
-                    return [2 /*return*/, reply.code(400).send('Your account has been deactivated! Please check your email to reactivate')];
+                    return [2 /*return*/, reply
+                            .code(400)
+                            .send("Your account has been deactivated! Please check your email to reactivate")];
                 return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
             case 2:
                 if (!_b.sent()) return [3 /*break*/, 7];
@@ -348,96 +352,109 @@ fastify.post('/api/user/login', function (request, reply) { return __awaiter(voi
                 _b.label = 4;
             case 4:
                 code = _a;
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID });
+                reply.code(200).send({
+                    fullName: results[0].fullName,
+                    groupID: results[0].groupID,
+                    emailAddress: results[0].emailAddress,
+                    authenticationKey: code,
+                    userID: results[0].userID,
+                });
                 if (!!results[0].authenticationKey) return [3 /*break*/, 6];
-                return [4 /*yield*/, dbInsert('UPDATE users SET authenticationKey=? WHERE emailAddress=?', [code, body['emailAddress']]).catch(function (err) { return console.log(err); })];
+                return [4 /*yield*/, dbInsert("UPDATE users SET authenticationKey=? WHERE emailAddress=?", [code, body["emailAddress"]]).catch(function (err) { return console.log(err); })];
             case 5:
                 _b.sent();
                 _b.label = 6;
             case 6: return [3 /*break*/, 8];
             case 7:
-                reply.code(400).send('Incorrect username or password.');
+                reply.code(400).send("Incorrect username or password.");
                 _b.label = 8;
             case 8: return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/user/deactivate', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/deactivate", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, emailCode, results, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 return [4 /*yield*/, generateEmailCode()];
             case 1:
                 emailCode = _c.sent();
                 _a = dbQuery;
-                _b = ['SELECT emailAddress FROM users WHERE userID=?'];
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                _b = ["SELECT emailAddress FROM users WHERE userID=?"];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
             case 3:
                 results = _c.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                return [4 /*yield*/, dbQuery('UPDATE users SET active=0, verificationCode=? WHERE authenticationKey=?', [emailCode, body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery("UPDATE users SET active=0, verificationCode=? WHERE authenticationKey=?", [emailCode, body["authenticationKey"]])];
             case 4:
                 _c.sent();
-                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivation', "Hi!<br><br>We have received a request to deactivate your account. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/deactivate?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                sendMail(results[0]["emailAddress"], "PetrolShare - Account Deactivation", "Hi!<br><br>We have received a request to deactivate your account. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/deactivate?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/notify/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/notify/register", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('notificationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("emailAddress" in body) || !("notificationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 console.log(body["notificationKey"]);
-                return [4 /*yield*/, dbInsert('UPDATE users SET notificationKey=? WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])];
+                return [4 /*yield*/, dbInsert("UPDATE users SET notificationKey=? WHERE emailAddress=?", [
+                        body["notificationKey"],
+                        body["emailAddress"],
+                    ])];
             case 1:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/notify/deregister', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/notify/deregister", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("emailAddress" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbInsert('UPDATE users SET notificationKey=null WHERE emailAddress=?', [body["notificationKey"], body["emailAddress"]])];
+                return [4 /*yield*/, dbInsert("UPDATE users SET notificationKey=null WHERE emailAddress=?", [body["notificationKey"], body["emailAddress"]])];
             case 1:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/user/register', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/register", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, password, code, emailCode, _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body) || !('password' in body) || !('fullName' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("emailAddress" in body) ||
+                    !("password" in body) ||
+                    !("fullName" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT * from users WHERE emailAddress=?', [body['emailAddress']])];
+                return [4 /*yield*/, dbQuery("SELECT * from users WHERE emailAddress=?", [
+                        body["emailAddress"],
+                    ])];
             case 1:
                 results = _d.sent();
                 if (results.length)
-                    return [2 /*return*/, reply.code(400).send('This user exists already!')];
-                password = argon2_1.default.hash(body['password']);
+                    return [2 /*return*/, reply.code(400).send("This user exists already!")];
+                password = argon2_1.default.hash(body["password"]);
                 return [4 /*yield*/, generateCode()];
             case 2:
                 code = _d.sent();
@@ -445,82 +462,95 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
             case 3:
                 emailCode = _d.sent();
                 _a = dbInsert;
-                _b = ['INSERT INTO users( fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?)'];
-                _c = [body['fullName'], body['emailAddress']];
+                _b = ["INSERT INTO users( fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?)"];
+                _c = [body["fullName"], body["emailAddress"]];
                 return [4 /*yield*/, password];
             case 4: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent(), code, emailCode])]))];
             case 5:
                 _d.sent();
-                sendMail(body['emailAddress'], 'Verify your Mail', "Hey " + body['fullName'] + ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
+                sendMail(body["emailAddress"], "Verify your Mail", "Hey " + body["fullName"] + ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
                 reply.send(code);
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/group/create', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/group/create", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, lastInGroup, groupIDExists, groupID, isPremium;
     var _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('groupID' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) || !("groupID" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, checkIfLast(body['authenticationKey'])];
+                return [4 /*yield*/, checkIfLast(body["authenticationKey"])];
             case 1:
                 lastInGroup = _b.sent();
-                return [4 /*yield*/, dbQuery('SELECT premium FROM groups WHERE groupID=?', [body['groupID']])];
+                return [4 /*yield*/, dbQuery("SELECT premium FROM groups WHERE groupID=?", [body["groupID"]])];
             case 2:
                 groupIDExists = _b.sent();
-                groupID = body['groupID'];
+                groupID = body["groupID"];
                 if (groupIDExists.length)
                     groupID = generateGroupID();
                 isPremium = groupIDExists.length ? false : (_a = groupIDExists[0]) === null || _a === void 0 ? void 0 : _a.premium;
-                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [groupID, body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery("UPDATE users SET groupID=? WHERE authenticationKey=?", [
+                        groupID,
+                        body["authenticationKey"],
+                    ])];
             case 3:
                 _b.sent();
-                return [4 /*yield*/, dbInsert('INSERT INTO groups (groupID) VALUES (?)', [groupID])];
+                return [4 /*yield*/, dbInsert("INSERT INTO groups (groupID) VALUES (?)", [groupID])];
             case 4:
                 _b.sent();
-                reply.send({ groupID: groupID, message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' });
+                reply.send({
+                    groupID: groupID,
+                    message: lastInGroup && !isPremium
+                        ? "You are the last member of this group and as such the group will be deleted within the next 24 hours"
+                        : "",
+                });
                 reply.send(groupID);
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/group/update', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/group/update", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, groupID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('distance' in body) || !('petrol' in body) || !('currency' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) ||
+                    !("distance" in body) ||
+                    !("petrol" in body) ||
+                    !("currency" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
             case 1:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('UPDATE groups SET distance=?, petrol=?, currency=? WHERE groupID=?', [body['distance'], body['petrol'], body['currency'], groupID])];
+                return [4 /*yield*/, dbQuery("UPDATE groups SET distance=?, petrol=?, currency=? WHERE groupID=?", [body["distance"], body["petrol"], body["currency"], groupID])];
             case 2:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/group/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, groupID, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
             case 1:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('SELECT * FROM groups WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery("SELECT * FROM groups WHERE groupID=?", [
+                        groupID,
+                    ])];
             case 2:
                 res = _a.sent();
                 if (!res)
@@ -530,19 +560,21 @@ fastify.get('/api/group/get', function (request, reply) { return __awaiter(void 
         }
     });
 }); });
-fastify.post('/api/group/subscribe', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/group/subscribe", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, groupID, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
             case 1:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('UPDATE groups SET premium=1 WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery("UPDATE groups SET premium=1 WHERE groupID=?", [
+                        groupID,
+                    ])];
             case 2:
                 res = _a.sent();
                 reply.code(200).send(res === null || res === void 0 ? void 0 : res.changedRows);
@@ -550,19 +582,19 @@ fastify.post('/api/group/subscribe', function (request, reply) { return __awaite
         }
     });
 }); });
-fastify.get('/api/group/get-members', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/group/get-members", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, groupID, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
             case 1:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('SELECT fullName, userID FROM users WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery("SELECT fullName, userID FROM users WHERE groupID=?", [groupID])];
             case 2:
                 res = _a.sent();
                 if (!res)
@@ -572,216 +604,247 @@ fastify.get('/api/group/get-members', function (request, reply) { return __await
         }
     });
 }); });
-fastify.post('/api/user/change-group', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/change-group", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, groupID, results, isPremium, _a, _b, isNewPremium, groupMemberCount, lastInGroup;
     var _c, _d;
     return __generator(this, function (_e) {
         switch (_e.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('groupID' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) || !("groupID" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 groupID = body["groupID"];
-                if (groupID.includes('petrolshare.freud-online.co.uk')) {
-                    groupID = groupID.split('groupID=')[1];
+                if (groupID.includes("petrolshare.freud-online.co.uk")) {
+                    groupID = groupID.split("groupID=")[1];
                 }
-                return [4 /*yield*/, dbQuery('SELECT groupID, premium FROM groups WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery("SELECT groupID, premium FROM groups WHERE groupID=?", [groupID])];
             case 1:
                 results = _e.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There was no group found with that ID!")];
                 _a = dbQuery;
-                _b = ['SELECT premium FROM groups WHERE groupID=?'];
+                _b = ["SELECT premium FROM groups WHERE groupID=?"];
                 return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
-            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_e.sent()]]))];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[
+                        _e.sent()
+                    ]]))];
             case 3:
                 isPremium = (_c = (_e.sent())[0]) === null || _c === void 0 ? void 0 : _c.premium;
                 isNewPremium = (_d = results[0]) === null || _d === void 0 ? void 0 : _d.premium;
-                return [4 /*yield*/, dbQuery('SELECT null FROM users WHERE groupID=?', [groupID])];
+                return [4 /*yield*/, dbQuery("SELECT null FROM users WHERE groupID=?", [groupID])];
             case 4:
                 groupMemberCount = _e.sent();
-                return [4 /*yield*/, checkIfLast(body['authenticationKey'])];
+                return [4 /*yield*/, checkIfLast(body["authenticationKey"])];
             case 5:
                 lastInGroup = _e.sent();
                 if (!isNewPremium && groupMemberCount.length >= 2)
-                    return [2 /*return*/, reply.code(400).send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")];
-                return [4 /*yield*/, dbQuery('UPDATE users SET groupID=? WHERE authenticationKey=?', [results[0]['groupID'], body['authenticationKey']])];
+                    return [2 /*return*/, reply
+                            .code(400)
+                            .send("This group has reached the max member count. To join, they need to upgrade to Premium by clicking the banner inside the app.")];
+                return [4 /*yield*/, dbQuery("UPDATE users SET groupID=? WHERE authenticationKey=?", [
+                        results[0]["groupID"],
+                        body["authenticationKey"],
+                    ])];
             case 6:
                 _e.sent();
-                reply.send({ groupID: results[0]['groupID'], message: lastInGroup && !isPremium ? 'You are the last member of this group and as such the group will be deleted within the next 24 hours' : '' });
+                reply.send({
+                    groupID: results[0]["groupID"],
+                    message: lastInGroup && !isPremium
+                        ? "You are the last member of this group and as such the group will be deleted within the next 24 hours"
+                        : "",
+                });
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/user/change-email', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/change-email", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, emailCode, results, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('newEmail' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) || !("newEmail" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 return [4 /*yield*/, generateEmailCode()];
             case 1:
                 emailCode = _c.sent();
                 _a = dbQuery;
-                _b = ['SELECT emailAddress FROM users WHERE userID=?'];
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                _b = ["SELECT emailAddress FROM users WHERE userID=?"];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
             case 3:
                 results = _c.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?', [emailCode, body['newEmail'], body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery("UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?", [emailCode, body["newEmail"], body["authenticationKey"]])];
             case 4:
                 _c.sent();
-                sendMail(body['newEmail'], 'PetrolShare - Change Email Address', "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                sendMail(body["newEmail"], "PetrolShare - Change Email Address", "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/user/forgot-password', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/forgot-password", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, emailCode, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('emailAddress' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("emailAddress" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 return [4 /*yield*/, generateEmailCode()];
             case 1:
                 emailCode = _a.sent();
-                return [4 /*yield*/, dbQuery('SELECT emailAddress FROM users WHERE emailAddress=?', [body['emailAddress']])];
+                return [4 /*yield*/, dbQuery("SELECT emailAddress FROM users WHERE emailAddress=?", [body["emailAddress"]])];
             case 2:
                 results = _a.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There is no user with that email address")];
-                return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
+                return [4 /*yield*/, dbQuery("UPDATE users SET verificationCode=? WHERE emailAddress=?", [
+                        emailCode,
+                        body["emailAddress"],
+                    ])];
             case 3:
                 _a.sent();
-                sendMail(body['emailAddress'], 'PetrolShare - Forgot your Password', "Hi!<br><br>We have received a request to reset your password. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/reset-password?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                sendMail(body["emailAddress"], "PetrolShare - Forgot your Password", "Hi!<br><br>We have received a request to reset your password. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/reset-password?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/user/change-name', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/change-name", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('newName' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) || !("newName" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 _a = dbQuery;
-                _b = ['SELECT fullName FROM users WHERE userID=?'];
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
-            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+                _b = ["SELECT fullName FROM users WHERE userID=?"];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[
+                        _c.sent()
+                    ]]))];
             case 2:
                 results = _c.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                return [4 /*yield*/, dbQuery('UPDATE users SET fullName=? WHERE authenticationKey=?', [body['newName'], body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery("UPDATE users SET fullName=? WHERE authenticationKey=?", [
+                        body["newName"],
+                        body["authenticationKey"],
+                    ])];
             case 3:
                 _c.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/user/change-password', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/user/change-password", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, _a, _b, password;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('newPassword' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) || !("newPassword" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 _a = dbQuery;
-                _b = ['SELECT fullName FROM users WHERE userID=?'];
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
-            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+                _b = ["SELECT fullName FROM users WHERE userID=?"];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
+            case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[
+                        _c.sent()
+                    ]]))];
             case 2:
                 results = _c.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                return [4 /*yield*/, argon2_1.default.hash(body['newPassword'])];
+                return [4 /*yield*/, argon2_1.default.hash(body["newPassword"])];
             case 3:
                 password = _c.sent();
-                return [4 /*yield*/, dbQuery('UPDATE users SET password=?, authenticationKey=null WHERE authenticationKey=?', [password, body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery("UPDATE users SET password=?, authenticationKey=null WHERE authenticationKey=?", [password, body["authenticationKey"]])];
             case 4:
                 _c.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.get('/api/user/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/user/verify", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT * from users WHERE authenticationKey=?', [query['authenticationKey']])];
+                return [4 /*yield*/, dbQuery("SELECT * from users WHERE authenticationKey=?", [query["authenticationKey"]])];
             case 1:
                 results = _a.sent();
                 if (!results)
-                    return [2 /*return*/, reply.code(400).send('Your account session has expired! Please re-login')];
+                    return [2 /*return*/, reply
+                            .code(400)
+                            .send("Your account session has expired! Please re-login")];
                 if (!results[0]["active"])
-                    return [2 /*return*/, reply.code(400).send('This account has been deactivated. Please check your emails to reactivate!')];
-                reply.code(200).send({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, userID: results[0].userID });
+                    return [2 /*return*/, reply
+                            .code(400)
+                            .send("This account has been deactivated. Please check your emails to reactivate!")];
+                reply.code(200).send({
+                    fullName: results[0].fullName,
+                    groupID: results[0].groupID,
+                    emailAddress: results[0].emailAddress,
+                    userID: results[0].userID,
+                });
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.get('/api/user/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/user/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(query["authenticationKey"])];
             case 1:
                 userID = _a.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('SELECT fullName, groupID FROM users WHERE userID=?', [userID])];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                return [4 /*yield*/, dbQuery("SELECT fullName, groupID FROM users WHERE userID=?", [userID])];
             case 2:
                 results = _a.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
                 reply.send(results);
                 return [2 /*return*/];
         }
     });
 }); });
 // DISTANCE
-fastify.get('/api/distance/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/distance/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results, _a, _b, _c, total;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 query = request.query;
-                if (!('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(query["authenticationKey"])];
             case 1:
                 userID = _d.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1'];
+                _b = ["SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1"];
                 _c = [userID];
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
             case 3:
                 results = _d.sent();
@@ -797,19 +860,19 @@ fastify.get('/api/distance/get', function (request, reply) { return __awaiter(vo
         }
     });
 }); });
-fastify.post('/api/distance/reset', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/distance/reset", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, groupID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body || !("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
             case 1:
                 groupID = _a.sent();
-                return [4 /*yield*/, dbQuery('UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?', [Date.now(), groupID])];
+                return [4 /*yield*/, dbQuery("UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?", [Date.now(), groupID])];
             case 2:
                 _a.sent();
                 retrieveSessionID(groupID);
@@ -818,21 +881,21 @@ fastify.post('/api/distance/reset', function (request, reply) { return __awaiter
         }
     });
 }); });
-fastify.post('/api/distance/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/distance/add", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, log, sessionID, err_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('distance' in body) || !('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body || !("distance" in body) || !("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT * FROM users WHERE authenticationKey=?', [body['distance'], body['authenticationKey']])];
+                return [4 /*yield*/, dbQuery("SELECT * FROM users WHERE authenticationKey=?", [body["distance"], body["authenticationKey"]])];
             case 1:
                 results = _a.sent();
                 if (!results)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                return [4 /*yield*/, dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [body['authenticationKey']])];
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
+                return [4 /*yield*/, dbQuery("SELECT userID, groupID FROM users WHERE authenticationKey=?", [body["authenticationKey"]])];
             case 2:
                 log = (_a.sent())[0];
                 return [4 /*yield*/, retrieveSessionID(log.groupID)];
@@ -841,7 +904,7 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
                 _a.label = 4;
             case 4:
                 _a.trys.push([4, 6, , 7]);
-                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [log.userID, body["distance"], Date.now(), sessionID])];
+                return [4 /*yield*/, dbInsert("INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)", [log.userID, body["distance"], Date.now(), sessionID])];
             case 5:
                 _a.sent();
                 return [3 /*break*/, 7];
@@ -855,38 +918,47 @@ fastify.post('/api/distance/add', function (request, reply) { return __awaiter(v
         }
     });
 }); });
-fastify.post('/api/distance/assign', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/distance/assign", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userData, sessionID, groupData, user, err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('distance' in body) || !('authenticationKey' in body) || !('userID' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body ||
+                    !("distance" in body) ||
+                    !("authenticationKey" in body) ||
+                    !("userID" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT fullName, groupID FROM users WHERE authenticationKey=?', [body["authenticationKey"]])];
+                return [4 /*yield*/, dbQuery("SELECT fullName, userID, groupID FROM users WHERE authenticationKey=?", [body["authenticationKey"]])];
             case 1:
                 userData = _a.sent();
                 if (!userData.length)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
                 return [4 /*yield*/, retrieveSessionID(userData[0].groupID)];
             case 2:
                 sessionID = _a.sent();
                 if (!sessionID)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                return [4 /*yield*/, dbQuery('SELECT distance FROM groups WHERE groupID=?', [userData[0].groupID])];
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
+                return [4 /*yield*/, dbQuery("SELECT distance FROM groups WHERE groupID=?", [userData[0].groupID])];
             case 3:
                 groupData = _a.sent();
-                return [4 /*yield*/, dbQuery('SELECT notificationKey FROM users WHERE userID=?', [body["userID"]])];
+                return [4 /*yield*/, dbQuery("SELECT notificationKey FROM users WHERE userID=?", [body["userID"]])];
             case 4:
                 user = _a.sent();
                 if (!user.length)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                sendNotification([{ notificationKey: user[0].notificationKey }], userData[0].fullName + " has requested to add the distance of " + body["distance"] + groupData[0].distance + " to your account! Click on this notification to respond", { route: 'Dashboard' });
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
+                sendNotification([{ notificationKey: user[0].notificationKey }], userData[0].fullName + " has requested to add the distance of " + body["distance"] + groupData[0].distance + " to your account! Click on this notification to respond", { route: "Dashboard" });
                 _a.label = 5;
             case 5:
                 _a.trys.push([5, 7, , 8]);
-                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID, approved, assignedBy) VALUES(?,?,?,?,0,?)', [body["userID"], body["distance"], Date.now(), sessionID, body["userID"]])];
+                return [4 /*yield*/, dbInsert("INSERT INTO logs(userID, distance, date, sessionID, approved, assignedBy) VALUES(?,?,?,?,0,?)", [
+                        body["userID"],
+                        body["distance"],
+                        Date.now(),
+                        sessionID,
+                        userData[0].userID,
+                    ])];
             case 6:
                 _a.sent();
                 return [3 /*break*/, 8];
@@ -900,22 +972,22 @@ fastify.post('/api/distance/assign', function (request, reply) { return __awaite
         }
     });
 }); });
-fastify.post('/api/distance/dismiss', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/distance/dismiss", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userData, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('logID' in body) || !('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body || !("logID" in body) || !("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 userData = retrieveID(body["authenticationKey"]);
                 if (!userData)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
-                return [4 /*yield*/, dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])];
+                return [4 /*yield*/, dbQuery("DELETE FROM logs WHERE logID=?", [body["logID"]])];
             case 2:
                 _a.sent();
                 return [3 /*break*/, 4];
@@ -929,22 +1001,24 @@ fastify.post('/api/distance/dismiss', function (request, reply) { return __await
         }
     });
 }); });
-fastify.post('/api/distance/approve', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/distance/approve", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userData, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('logID' in body) || !('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body || !("logID" in body) || !("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 userData = retrieveID(body["authenticationKey"]);
                 if (!userData)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
-                return [4 /*yield*/, dbQuery('UPDATE logs SET approved=1 WHERE logID=?', [body["logID"]])];
+                return [4 /*yield*/, dbQuery("UPDATE logs SET approved=1 WHERE logID=?", [
+                        body["logID"],
+                    ])];
             case 2:
                 _a.sent();
                 return [3 /*break*/, 4];
@@ -958,35 +1032,39 @@ fastify.post('/api/distance/approve', function (request, reply) { return __await
         }
     });
 }); });
-fastify.get('/api/distance/check-distance', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/distance/check-distance", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userData, sessionID, groupData, _a, _b;
     var _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 query = request.query;
-                if (!query || !('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!query || !("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT userID, groupID FROM users WHERE authenticationKey=?', [query["authenticationKey"]])];
+                return [4 /*yield*/, dbQuery("SELECT userID, groupID FROM users WHERE authenticationKey=?", [query["authenticationKey"]])];
             case 1:
                 userData = _d.sent();
                 if (!userData.length)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
                 return [4 /*yield*/, retrieveSessionID(userData[0].groupID)];
             case 2:
                 sessionID = _d.sent();
                 if (!sessionID)
-                    return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                return [4 /*yield*/, dbQuery('SELECT distance, assignedBy, logID FROM logs WHERE sessionID=? AND approved=0', [sessionID])];
+                    return [2 /*return*/, reply.code(400).send("This user does not exist!")];
+                return [4 /*yield*/, dbQuery("SELECT distance, assignedBy, logID FROM logs WHERE sessionID=? AND approved=0 AND userID=?", [sessionID, userData[0].userID])];
             case 3:
                 groupData = _d.sent();
                 if (!groupData.length) return [3 /*break*/, 5];
                 _b = (_a = reply).send;
-                _c = { distance: groupData[0].distance };
+                _c = {
+                    distance: groupData[0].distance
+                };
                 return [4 /*yield*/, retrieveName(groupData[0].assignedBy)];
             case 4:
-                _b.apply(_a, [(_c.assignedBy = _d.sent(), _c.id = groupData[0].logID, _c)]);
+                _b.apply(_a, [(_c.assignedBy = _d.sent(),
+                        _c.id = groupData[0].logID,
+                        _c)]);
                 return [3 /*break*/, 6];
             case 5:
                 reply.code(200);
@@ -996,26 +1074,26 @@ fastify.get('/api/distance/check-distance', function (request, reply) { return _
     });
 }); });
 // LOGS
-fastify.get('/api/logs/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/logs/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, sessions, _a, _b, logs, _c, _d, flat;
     return __generator(this, function (_e) {
         switch (_e.label) {
             case 0:
                 query = request.query;
-                if (!('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 _a = dbQuery;
-                _b = ['SELECT sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID = ?'];
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+                _b = ["SELECT sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID = ?"];
+                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_e.sent()]]))];
             case 2:
                 sessions = _e.sent();
                 if (!sessions)
-                    return [2 /*return*/, reply.code(400).send('There are no sessions to be found')];
+                    return [2 /*return*/, reply.code(400).send("There are no sessions to be found")];
                 _c = dbQuery;
-                _d = ['SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? AND l.approved=1 ORDER BY l.date DESC'];
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+                _d = ["SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? AND l.approved=1 ORDER BY l.date DESC"];
+                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
             case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
             case 4:
                 logs = _e.sent();
@@ -1028,119 +1106,134 @@ fastify.get('/api/logs/get', function (request, reply) { return __awaiter(void 0
                         sessionActive: e.sessionActive,
                         sessionStart: e.sessionStart,
                         sessionEnd: e.sessionEnd,
-                        logs: []
+                        logs: [],
                     };
                 });
                 logs.map(function (e) {
                     if (!flat[e.sessionID])
                         flat[e.sessionID] = { logs: [] };
-                    flat[e.sessionID] = __assign(__assign({}, flat[e.sessionID]), { logs: __spreadArray(__spreadArray([], flat[e.sessionID].logs, true), [{ fullName: e.fullName, distance: e.distance, date: e.date, logID: e.logID }], false) });
+                    flat[e.sessionID] = __assign(__assign({}, flat[e.sessionID]), { logs: __spreadArray(__spreadArray([], flat[e.sessionID].logs), [
+                            {
+                                fullName: e.fullName,
+                                distance: e.distance,
+                                date: e.date,
+                                logID: e.logID,
+                            },
+                        ]) });
                 });
                 reply.send(flat);
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/logs/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/logs/delete", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('logID' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) || !("logID" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 1:
                 userID = _a.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                return [4 /*yield*/, dbQuery("SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?", [body["logID"]])];
             case 2:
                 results = _a.sent();
                 if (results[0].userID !== userID) {
-                    return [2 /*return*/, reply.code(400).send('Insufficient permissions!')];
+                    return [2 /*return*/, reply.code(400).send("Insufficient permissions!")];
                 }
-                return [4 /*yield*/, dbQuery('DELETE FROM logs WHERE logID=?', [body["logID"]])];
+                return [4 /*yield*/, dbQuery("DELETE FROM logs WHERE logID=?", [body["logID"]])];
             case 3:
                 _a.sent();
                 if (!results)
-                    return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
+                    return [2 /*return*/, reply.code(400).send("There are no logs to be found")];
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/logs/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/logs/edit", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!('authenticationKey' in body) || !('logID' in body) || !('distance' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!("authenticationKey" in body) ||
+                    !("logID" in body) ||
+                    !("distance" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 1:
                 userID = _a.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?', [body['logID']])];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                return [4 /*yield*/, dbQuery("SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?", [body["logID"]])];
             case 2:
                 results = _a.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).send('No log found with that ID')];
+                    return [2 /*return*/, reply.code(400).send("No log found with that ID")];
                 if (results[0].userID !== userID) {
-                    return [2 /*return*/, reply.code(400).send('Insufficient permissions!')];
+                    return [2 /*return*/, reply.code(400).send("Insufficient permissions!")];
                 }
-                return [4 /*yield*/, dbQuery('UPDATE logs SET distance=? WHERE logID=?', [body["distance"], body["logID"]])];
+                return [4 /*yield*/, dbQuery("UPDATE logs SET distance=? WHERE logID=?", [
+                        body["distance"],
+                        body["logID"],
+                    ])];
             case 3:
                 _a.sent();
                 if (!results)
-                    return [2 /*return*/, reply.code(400).send('There are no logs to be found')];
+                    return [2 /*return*/, reply.code(400).send("There are no logs to be found")];
                 return [2 /*return*/];
         }
     });
 }); });
 // PRESETS
-fastify.get('/api/preset/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/preset/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!query || !('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!query || !("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(query["authenticationKey"])];
             case 1:
                 userID = _a.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('SELECT presetName, distance, presetID FROM presets WHERE userID=?', [userID])];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                return [4 /*yield*/, dbQuery("SELECT presetName, distance, presetID FROM presets WHERE userID=?", [userID])];
             case 2:
                 results = _a.sent();
                 if (!results)
-                    return [2 /*return*/, reply.code(400).send('There are no presets!')];
+                    return [2 /*return*/, reply.code(400).send("There are no presets!")];
                 reply.send(results);
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/api/preset/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/preset/add", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body ||
+                    !("presetName" in body) ||
+                    !("distance" in body) ||
+                    !("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 1:
                 userID = _a.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbInsert('INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)', [body['presetName'], body['distance'], userID])];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                return [4 /*yield*/, dbInsert("INSERT INTO presets (presetName, distance, userID) VALUES (?,?,?)", [body["presetName"], body["distance"], userID])];
             case 2:
                 _a.sent();
                 reply.code(200);
@@ -1148,21 +1241,25 @@ fastify.post('/api/preset/add', function (request, reply) { return __awaiter(voi
         }
     });
 }); });
-fastify.post('/api/preset/edit', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/preset/edit", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('presetID' in body) || !('presetName' in body) || !('distance' in body) || !('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body ||
+                    !("presetID" in body) ||
+                    !("presetName" in body) ||
+                    !("distance" in body) ||
+                    !("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 1:
                 userID = _a.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('UPDATE presets SET presetName=?, distance=? WHERE presetID=?', [body['presetName'], body['distance'], body['presetID']])];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                return [4 /*yield*/, dbQuery("UPDATE presets SET presetName=?, distance=? WHERE presetID=?", [body["presetName"], body["distance"], body["presetID"]])];
             case 2:
                 _a.sent();
                 reply.code(200);
@@ -1170,21 +1267,21 @@ fastify.post('/api/preset/edit', function (request, reply) { return __awaiter(vo
         }
     });
 }); });
-fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/preset/delete", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('presetID' in body) || !('authenticationKey' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body || !("presetID" in body) || !("authenticationKey" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 1:
                 userID = _a.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('DELETE FROM presets WHERE presetID=?', [body['presetID']])];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                return [4 /*yield*/, dbQuery("DELETE FROM presets WHERE presetID=?", [body["presetID"]])];
             case 2:
                 _a.sent();
                 reply.code(200);
@@ -1193,64 +1290,98 @@ fastify.post('/api/preset/delete', function (request, reply) { return __awaiter(
     });
 }); });
 // PETROL
-fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/petrol/add", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, results, _a, _b, distances, i, e, totalDistance, pricePerLiter, totalCarDistance, litersPerKm, userID, _c, _d, _e, _f, _g, _h, res, _j, _k, _l, notifications;
     return __generator(this, function (_m) {
         switch (_m.label) {
             case 0:
                 body = request.body;
-                if (!body || !('totalPrice' in body) || !('litersFilled' in body) || !('authenticationKey' in body) || !('odometer' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body ||
+                    !("totalPrice" in body) ||
+                    !("litersFilled" in body) ||
+                    !("authenticationKey" in body) ||
+                    !("odometer" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 _a = dbQuery;
-                _b = ['SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1'];
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+                _b = ["SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1"];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
             case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_m.sent()]]))];
             case 2:
                 results = _m.sent();
                 if (!results || !results.length)
-                    return [2 /*return*/, reply.code(400).send('No logs found')];
+                    return [2 /*return*/, reply.code(400).send("No logs found")];
                 distances = {};
                 for (i = 0; i < results.length; i++) {
                     e = results[i];
                     if (!(e.userID in distances)) {
                         distances[e.userID] = { distance: 0, fullName: e["fullName"] };
                     }
-                    distances[e.userID] = { distance: distances[e.userID].distance + parseFloat(e.distance), fullName: e["fullName"] };
+                    distances[e.userID] = {
+                        distance: distances[e.userID].distance + parseFloat(e.distance),
+                        fullName: e["fullName"],
+                    };
                 }
                 totalDistance = Object.values(distances).reduce(function (a, b) { return a + b["distance"]; }, 0);
-                pricePerLiter = body['totalPrice'] / body['litersFilled'];
-                totalCarDistance = body['odometer'] - results[0]['initialOdometer'];
-                litersPerKm = body['litersFilled'] / (results[0]['initialOdometer'] && totalCarDistance > 0 ? totalCarDistance : totalDistance);
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                pricePerLiter = body["totalPrice"] / body["litersFilled"];
+                totalCarDistance = body["odometer"] - results[0]["initialOdometer"];
+                litersPerKm = body["litersFilled"] /
+                    (results[0]["initialOdometer"] && totalCarDistance > 0
+                        ? totalCarDistance
+                        : totalDistance);
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 3:
                 userID = _m.sent();
                 Object.entries(distances).map(function (_a) {
                     var key = _a[0], value = _a[1];
-                    distances[key] = { fullName: value.fullName, paymentDue: Math.round((value.distance * litersPerKm * pricePerLiter) * 100) / 100, paid: parseInt(key) === userID, distance: Math.round(value.distance * 100) / 100, liters: (value.distance * litersPerKm).toFixed(2) };
+                    distances[key] = {
+                        fullName: value.fullName,
+                        paymentDue: Math.round(value.distance * litersPerKm * pricePerLiter * 100) / 100,
+                        paid: parseInt(key) === userID,
+                        distance: Math.round(value.distance * 100) / 100,
+                        liters: (value.distance * litersPerKm).toFixed(2),
+                    };
                 });
-                if (results[0]['initialOdometer'] && totalCarDistance !== totalDistance && (totalCarDistance - totalDistance > 0)) {
-                    distances[0] = { fullName: 'Unaccounted Distance', paymentDue: Math.round(((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter) * 100) / 100, paid: false, distance: Math.round((totalCarDistance - totalDistance) * 100) / 100 };
+                if (results[0]["initialOdometer"] &&
+                    totalCarDistance !== totalDistance &&
+                    totalCarDistance - totalDistance > 0) {
+                    distances[0] = {
+                        fullName: "Unaccounted Distance",
+                        paymentDue: Math.round((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter * 100) / 100,
+                        paid: false,
+                        distance: Math.round((totalCarDistance - totalDistance) * 100) / 100,
+                    };
                 }
                 _c = dbInsert;
-                _d = ['UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1'];
+                _d = ["UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=? AND sessionActive=1"];
                 _e = [Date.now()];
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
             case 4: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_m.sent()])]))];
             case 5:
                 _m.sent();
                 _f = dbInsert;
-                _g = ['INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)'];
+                _g = ["INSERT INTO sessions (sessionStart, groupID, sessionActive, initialOdometer) VALUES (?,?,?,?)"];
                 _h = [Date.now()];
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
-            case 6: return [4 /*yield*/, _f.apply(void 0, _g.concat([_h.concat([_m.sent(), true, body['odometer']])]))];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
+            case 6: return [4 /*yield*/, _f.apply(void 0, _g.concat([_h.concat([
+                        _m.sent(),
+                        true,
+                        body["odometer"]
+                    ])]))];
             case 7:
                 _m.sent();
                 _j = dbInsert;
-                _k = ['INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter) VALUES (?,?,?,?,?,?,?)'];
-                _l = [JSON.stringify(distances), results[0].sessionID, body['totalPrice'], Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100];
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
-            case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([_m.sent(), body['litersFilled'], pricePerLiter])]))];
+                _k = ["INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter) VALUES (?,?,?,?,?,?,?)"];
+                _l = [JSON.stringify(distances),
+                    results[0].sessionID,
+                    body["totalPrice"],
+                    Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
+            case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([
+                        _m.sent(),
+                        body["litersFilled"],
+                        pricePerLiter
+                    ])]))];
             case 9:
                 res = _m.sent();
                 notifications = results.filter(function (e) { return e.userID !== userID; });
@@ -1259,46 +1390,46 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     return map;
                 }, {});
                 sendNotification(Object.values(notifications), "You have a new invoice waiting!", { route: "Invoices", invoiceID: res["insertId"] });
-                reply.send(res['insertId']);
+                reply.send(res["insertId"]);
                 return [2 /*return*/];
         }
     });
 }); });
 // INVOICES
-fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/api/invoices/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, userID, results_1, _a, _b, results, _c, _d, _e, i, e, data, i_1, key, name_1;
     return __generator(this, function (_f) {
         switch (_f.label) {
             case 0:
                 query = request.query;
-                if (!query || !('authenticationKey' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!query || !("authenticationKey" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(query["authenticationKey"])];
             case 1:
                 userID = _f.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                if (!!('invoiceID' in query)) return [3 /*break*/, 4];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
+                if (!!("invoiceID" in query)) return [3 /*break*/, 4];
                 _a = dbQuery;
-                _b = ['SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC'];
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+                _b = ["SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC"];
+                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_f.sent()]]))];
             case 3:
                 results_1 = _f.sent();
                 if (!results_1.length)
-                    return [2 /*return*/, reply.code(400).send('There are no invoices in that group!')];
+                    return [2 /*return*/, reply.code(400).send("There are no invoices in that group!")];
                 return [2 /*return*/, reply.send(results_1)];
             case 4:
                 _c = dbQuery;
-                _d = ['SELECT u.fullName, i.invoiceData, i.totalDistance, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _d = ["SELECT u.fullName, i.invoiceData, i.totalDistance, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?"];
                 _e = [query["invoiceID"]];
-                return [4 /*yield*/, retrieveGroupID(query['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
             case 5: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_f.sent()])]))];
             case 6:
                 results = _f.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
+                    return [2 /*return*/, reply.code(400).send("There are no invoices with that ID!")];
                 i = 0;
                 _f.label = 7;
             case 7:
@@ -1323,7 +1454,10 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
             case 11:
                 i++;
                 return [3 /*break*/, 7];
-            case 12: return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [results[0].invoiceData, query["invoiceID"]])];
+            case 12: return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=? WHERE invoiceID=?", [
+                    results[0].invoiceData,
+                    query["invoiceID"],
+                ])];
             case 13:
                 _f.sent();
                 reply.send(results[0]);
@@ -1331,37 +1465,43 @@ fastify.get('/api/invoices/get', function (request, reply) { return __awaiter(vo
         }
     });
 }); });
-fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/invoices/pay", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID, results, _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 body = request.body;
-                if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body ||
+                    !("authenticationKey" in body) ||
+                    !("invoiceID" in body) ||
+                    !("userID" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 1:
                 userID = _d.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
                 _a = dbQuery;
-                _b = ['SELECT i.invoiceData FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _b = ["SELECT i.invoiceData FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?"];
                 _c = [body["invoiceID"]];
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
             case 3:
                 results = _d.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
+                    return [2 /*return*/, reply.code(400).send("There are no invoices with that ID!")];
                 results = JSON.parse(results[0].invoiceData);
                 if (results[body["userID"]]) {
                     results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { paid: true });
                 }
                 else {
-                    return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
+                    return [2 /*return*/, reply.code(400).send("No user found with that ID!")];
                 }
-                return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
+                return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=? WHERE invoiceID=?", [
+                        JSON.stringify(results),
+                        body["invoiceID"],
+                    ])];
             case 4:
                 _d.sent();
                 reply.send();
@@ -1369,37 +1509,44 @@ fastify.post('/api/invoices/pay', function (request, reply) { return __awaiter(v
         }
     });
 }); });
-fastify.post('/api/invoices/assign', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/api/invoices/assign", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, userID, data, _a, _b, _c, results, totalDistance, pricePerLiter, litersPerKm, newDistance, unidentified, newUnidentified, fullName;
     return __generator(this, function (_d) {
         switch (_d.label) {
             case 0:
                 body = request.body;
-                if (!body || !('authenticationKey' in body) || !('invoiceID' in body) || !('userID' in body) || !('distance' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body ||
+                    !("authenticationKey" in body) ||
+                    !("invoiceID" in body) ||
+                    !("userID" in body) ||
+                    !("distance" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveID(body["authenticationKey"])];
             case 1:
                 userID = _d.sent();
                 if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                    return [2 /*return*/, reply.code(400).send("No user found!")];
                 _a = dbQuery;
-                _b = ['SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer, s.sessionID FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?'];
+                _b = ["SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer, s.sessionID FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?"];
                 _c = [body["invoiceID"]];
-                return [4 /*yield*/, retrieveGroupID(body['authenticationKey'])];
+                return [4 /*yield*/, retrieveGroupID(body["authenticationKey"])];
             case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
             case 3:
                 data = _d.sent();
                 if (!data.length)
-                    return [2 /*return*/, reply.code(400).send('There are no invoices with that ID!')];
+                    return [2 /*return*/, reply.code(400).send("There are no invoices with that ID!")];
                 results = JSON.parse(data[0].invoiceData);
-                if (!results['0'])
-                    return [2 /*return*/, reply.code(400).send('No unindentified distance to assign!')];
+                if (!results["0"])
+                    return [2 /*return*/, reply.code(400).send("No unindentified distance to assign!")];
                 totalDistance = data[0]["totalDistance"];
-                pricePerLiter = data[0]['totalPrice'] / data[0]['litersFilled'];
-                litersPerKm = data[0]['litersFilled'] / totalDistance;
-                newDistance = results[body["userID"]] ? parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance) : parseFloat(body["distance"]);
-                unidentified = results['0'];
+                pricePerLiter = data[0]["totalPrice"] / data[0]["litersFilled"];
+                litersPerKm = data[0]["litersFilled"] / totalDistance;
+                newDistance = results[body["userID"]]
+                    ? parseFloat(body["distance"]) +
+                        parseFloat(results[body["userID"]].distance)
+                    : parseFloat(body["distance"]);
+                unidentified = results["0"];
                 newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"]);
                 if (!results[body["userID"]]) return [3 /*break*/, 4];
                 results[body["userID"]] = __assign(__assign({}, results[body["userID"]]), { distance: newDistance.toFixed(2), paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2) });
@@ -1408,20 +1555,27 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
             case 5:
                 fullName = _d.sent();
                 if (!fullName)
-                    return [2 /*return*/, reply.code(400).send('No user found with that ID!')];
+                    return [2 /*return*/, reply.code(400).send("No user found with that ID!")];
                 results[body["userID"]] = {
-                    fullName: fullName, distance: newDistance.toFixed(2), paid: false, paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2), liters: (newDistance * litersPerKm).toFixed(2)
+                    fullName: fullName,
+                    distance: newDistance.toFixed(2),
+                    paid: false,
+                    paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2),
+                    liters: (newDistance * litersPerKm).toFixed(2),
                 };
                 _d.label = 6;
             case 6:
                 if (newUnidentified <= 0)
                     delete results["0"];
                 else
-                    results['0'] = __assign(__assign({}, results["0"]), { distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2) });
-                return [4 /*yield*/, dbInsert('INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)', [body["userID"], body["distance"], Date.now(), data[0]["sessionID"]])];
+                    results["0"] = __assign(__assign({}, results["0"]), { distance: newUnidentified.toFixed(2), paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2) });
+                return [4 /*yield*/, dbInsert("INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)", [body["userID"], body["distance"], Date.now(), data[0]["sessionID"]])];
             case 7:
                 _d.sent();
-                return [4 /*yield*/, dbInsert('UPDATE invoices SET invoiceData=? WHERE invoiceID=?', [JSON.stringify(results), body["invoiceID"]])];
+                return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=? WHERE invoiceID=?", [
+                        JSON.stringify(results),
+                        body["invoiceID"],
+                    ])];
             case 8:
                 _d.sent();
                 reply.send();
@@ -1430,139 +1584,142 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
     });
 }); });
 // EMAIL
-fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/email/verify", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!query || !('code' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!query || !("code" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT fullName, verified, tempEmail FROM users WHERE verificationCode=?', [query['code']])];
+                return [4 /*yield*/, dbQuery("SELECT fullName, verified, tempEmail FROM users WHERE verificationCode=?", [query["code"]])];
             case 1:
                 results = _a.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
+                    return [2 /*return*/, reply.code(400).sendFile("fail.html")];
                 if (!(results[0].verified && results[0].tempEmail)) return [3 /*break*/, 3];
-                return [4 /*yield*/, dbInsert('UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?', [results[0].tempEmail, query['code']])];
+                return [4 /*yield*/, dbInsert("UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?", [results[0].tempEmail, query["code"]])];
             case 2:
                 _a.sent();
                 return [3 /*break*/, 5];
-            case 3: return [4 /*yield*/, dbInsert('UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?', [query['code']])];
+            case 3: return [4 /*yield*/, dbInsert("UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?", [query["code"]])];
             case 4:
                 _a.sent();
                 _a.label = 5;
-            case 5: return [4 /*yield*/, reply.sendFile('success.html')];
+            case 5: return [4 /*yield*/, reply.sendFile("success.html")];
             case 6:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.post('/email/resend', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.post("/email/resend", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var body, emailCode;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = request.body;
-                if (!body || !('emailAddress' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!body || !("emailAddress" in body)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
                 return [4 /*yield*/, generateEmailCode()];
             case 1:
                 emailCode = _a.sent();
-                return [4 /*yield*/, dbInsert('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
+                return [4 /*yield*/, dbInsert("UPDATE users SET verificationCode=? WHERE emailAddress=?", [
+                        emailCode,
+                        body["emailAddress"],
+                    ])];
             case 2:
                 _a.sent();
-                sendMail(body['emailAddress'], 'Verify your Mail', "Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
+                sendMail(body["emailAddress"], "Verify your Mail", "Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.get('/email/reset-password', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/email/reset-password", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results, password, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 query = request.query;
-                if (!query || !('code' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!query || !("code" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT fullName, verified FROM users WHERE verificationCode=?', [query['code']])];
+                return [4 /*yield*/, dbQuery("SELECT fullName, verified FROM users WHERE verificationCode=?", [query["code"]])];
             case 1:
                 results = _c.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
+                    return [2 /*return*/, reply.code(400).sendFile("fail.html")];
                 password = generateTempPassword();
                 _a = dbInsert;
-                _b = ['UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?'];
+                _b = ["UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?"];
                 return [4 /*yield*/, argon2_1.default.hash(password)];
-            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent(), query['code']]]))];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent(), query["code"]]]))];
             case 3:
                 _c.sent();
-                return [4 /*yield*/, reply.view('reset-password.ejs', { password: password })];
+                return [4 /*yield*/, reply.view("reset-password.ejs", { password: password })];
             case 4:
                 _c.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.get('/email/deactivate', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/email/deactivate", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results, verificationCode;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!query || !('code' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!query || !("code" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT fullName, emailAddress FROM users WHERE verificationCode=?', [query['code']])];
+                return [4 /*yield*/, dbQuery("SELECT fullName, emailAddress FROM users WHERE verificationCode=?", [query["code"]])];
             case 1:
                 results = _a.sent();
                 return [4 /*yield*/, generateEmailCode()];
             case 2:
                 verificationCode = _a.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
-                return [4 /*yield*/, dbInsert('UPDATE users SET active=0, verificationCode=? WHERE verificationCode=?', [verificationCode, query['code']])];
+                    return [2 /*return*/, reply.code(400).sendFile("fail.html")];
+                return [4 /*yield*/, dbInsert("UPDATE users SET active=0, verificationCode=? WHERE verificationCode=?", [verificationCode, query["code"]])];
             case 3:
                 _a.sent();
-                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivated', "Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/activate?code=" + verificationCode + "\" target=\"_blank\">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team");
-                return [4 /*yield*/, reply.sendFile('deactivated.html')];
+                sendMail(results[0]["emailAddress"], "PetrolShare - Account Deactivated", "Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/activate?code=" + verificationCode + "\" target=\"_blank\">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team");
+                return [4 /*yield*/, reply.sendFile("deactivated.html")];
             case 4:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.get('/email/activate', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/email/activate", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 query = request.query;
-                if (!query || !('code' in query)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                if (!query || !("code" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery('SELECT fullName, emailAddress FROM users WHERE verificationCode=?', [query['code']])];
+                return [4 /*yield*/, dbQuery("SELECT fullName, emailAddress FROM users WHERE verificationCode=?", [query["code"]])];
             case 1:
                 results = _a.sent();
                 if (!results.length)
-                    return [2 /*return*/, reply.code(400).sendFile('fail.html')];
-                return [4 /*yield*/, dbInsert('UPDATE users SET active=1, verificationCode=NULL WHERE verificationCode=?', [query['code']])];
+                    return [2 /*return*/, reply.code(400).sendFile("fail.html")];
+                return [4 /*yield*/, dbInsert("UPDATE users SET active=1, verificationCode=NULL WHERE verificationCode=?", [query["code"]])];
             case 2:
                 _a.sent();
-                return [4 /*yield*/, reply.sendFile('activated.html')];
+                return [4 /*yield*/, reply.sendFile("activated.html")];
             case 3:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); });
-fastify.get('/test', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+fastify.get("/test", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        sendNotification([{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }], 'Testing...', { route: 'Invoices', invoiceID: 440 });
+        sendNotification([{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }], "Testing...", { route: "Invoices", invoiceID: 440 });
         return [2 /*return*/];
     });
 }); });
@@ -1607,7 +1764,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 4, , 5]);
-                        console.log('Sending notification...');
+                        console.log("Sending notification...");
                         return [4 /*yield*/, expo.sendPushNotificationsAsync(chunk)];
                     case 3:
                         ticketChunk = _a.sent();
@@ -1654,10 +1811,10 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
                         // notification and information about an error, if one occurred.
                         for (receiptId in receipts) {
                             _a = receipts[receiptId], status_1 = _a.status, message_1 = _a.message, details = _a.details;
-                            if (status_1 === 'ok') {
+                            if (status_1 === "ok") {
                                 continue;
                             }
-                            else if (status_1 === 'error') {
+                            else if (status_1 === "error") {
                                 console.error("There was an error sending a notification: " + message_1);
                                 if (details && details.error) {
                                     console.error("The error code is " + details.error);
@@ -1689,7 +1846,7 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 return [4 /*yield*/, fastify.listen({ port: 3434 })];
             case 1:
                 _a.sent();
-                console.log('Listening to traffic on 3434');
+                console.log("Listening to traffic on 3434");
                 return [3 /*break*/, 3];
             case 2:
                 err_6 = _a.sent();
