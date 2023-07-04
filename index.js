@@ -1587,36 +1587,6 @@ fastify.post("/api/invoices/assign", function (request, reply) { return __awaite
         }
     });
 }); });
-fastify.post('/api/invoices/alert', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, userID, user;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                body = request.body;
-                if (!body || !('authenticationKey' in body) || !('fullName' in body) || !('invoiceID' in body)) {
-                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
-                }
-                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
-            case 1:
-                userID = _a.sent();
-                if (!userID)
-                    return [2 /*return*/, reply.code(400).send('No user found!')];
-                return [4 /*yield*/, dbQuery('SELECT notificationKey FROM users WHERE fullName=?', [body['fullName']])];
-            case 2:
-                user = _a.sent();
-                if (!user.length)
-                    return [2 /*return*/, reply.code(400).send('There is no user with that name!')];
-                if (user[0].notificationKey) {
-                    sendNotification([{ notificationKey: user[0].notificationKey }], "You have a payment request waiting and havent dealt with it yet! ".concat(body['fullName'], " has asked for your attention on it!"), { route: "Payments", invoiceID: body["invoiceID"] });
-                }
-                else {
-                    return [2 /*return*/, reply.code(400).send('This user is using the web version of the app and as such we cannot send them notifications!')];
-                }
-                reply.send();
-                return [2 /*return*/];
-        }
-    });
-}); });
 // EMAIL
 fastify.get("/email/verify", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
