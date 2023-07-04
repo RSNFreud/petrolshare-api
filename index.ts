@@ -798,7 +798,7 @@ fastify.post<{ Body: { authenticationKey: string, totalPrice: number, litersFill
         return map
     }, {})
 
-    sendNotification(Object.values(notifications), "You have a new invoice waiting!", { route: "Invoices", invoiceID: res["insertId"] })
+    sendNotification(Object.values(notifications), "You have a new payment request waiting!", { route: "Payments", invoiceID: res["insertId"] })
     reply.send(res['insertId'])
 })
 
@@ -919,6 +919,30 @@ fastify.post<{ Body: { authenticationKey: string, invoiceID: string, userID: str
     reply.send()
 })
 
+fastify.post<{ Body: { authenticationKey: string, fullName: string, invoiceID: number } }>('/api/invoices/alert', async (request, reply) => {
+    const { body } = request
+
+    if (!body || !('authenticationKey' in body) || !('fullName' in body) || !('invoiceID' in body)) {
+        return reply.code(400).send('Missing required field!')
+    }
+
+    let userID = await retrieveID(body['authenticationKey'])
+    if (!userID) return reply.code(400).send('No user found!')
+
+    const user = await dbQuery('SELECT notificationKey FROM users WHERE fullName=?', [body['fullName']])
+
+    if (!user.length)
+        return reply.code(400).send('There is no user with that name!')
+
+    if (user[0].notificationKey) {
+        sendNotification([{ notificationKey: user[0].notificationKey }], `You have a payment request waiting and havent dealt with it yet! ${body['fullName']} has asked for your attention on it!`, { route: "Payments", invoiceID: body["invoiceID"] })
+    } else {
+        return reply.code(400).send('This user is using the web version of the app and as such we cannot send them notifications!')
+    }
+
+    reply.send()
+})
+
 // EMAIL
 
 fastify.get<{ Querystring: { authenticationKey: string, code: string } }>('/email/verify', async (request, reply) => {
@@ -999,7 +1023,7 @@ fastify.get<{ Querystring: { code: string } }>('/email/activate', async (request
 })
 
 fastify.get<{ Querystring: { code: string } }>('/test', async (request, reply) => {
-    sendNotification([{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }], 'Testing...', { route: 'Invoices', invoiceID: 440 })
+    sendNotification([{ notificationKey: "ExponentPushToken[sfla3FFeNCccGYE_0EUv_d]" }], 'Testing...', { route: 'Payments', invoiceID: 440 })
 })
 
 // NOTIFY
@@ -1012,6 +1036,7 @@ const sendNotification = async (notifKeys: Array<{ notificationKey: string }>, m
 
     for (let pushToken of notifKeys) {
         if (!pushToken["notificationKey"]) continue
+
 
         // // Check that all your push tokens appear to be valid Expo push tokens
         if (!Expo.isExpoPushToken(pushToken["notificationKey"])) {

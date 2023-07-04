@@ -385,7 +385,7 @@ fastify.post('/api/user/deactivate', function (request, reply) { return __awaite
                 return [4 /*yield*/, dbQuery('UPDATE users SET active=0, verificationCode=? WHERE authenticationKey=?', [emailCode, body['authenticationKey']])];
             case 4:
                 _c.sent();
-                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivation', "Hi!<br><br>We have received a request to deactivate your account. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/deactivate?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivation', "Hi!<br><br>We have received a request to deactivate your account. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/deactivate?code=".concat(emailCode, "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team"));
                 return [2 /*return*/];
         }
     });
@@ -451,7 +451,7 @@ fastify.post('/api/user/register', function (request, reply) { return __awaiter(
             case 4: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent(), code, emailCode])]))];
             case 5:
                 _d.sent();
-                sendMail(body['emailAddress'], 'Verify your Mail', "Hey " + body['fullName'] + ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
+                sendMail(body['emailAddress'], 'Verify your Mail', "Hey ".concat(body['fullName'], ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=").concat(emailCode, "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>"));
                 reply.send(code);
                 return [2 /*return*/];
         }
@@ -637,7 +637,7 @@ fastify.post('/api/user/change-email', function (request, reply) { return __awai
                 return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?', [emailCode, body['newEmail'], body['authenticationKey']])];
             case 4:
                 _c.sent();
-                sendMail(body['newEmail'], 'PetrolShare - Change Email Address', "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                sendMail(body['newEmail'], 'PetrolShare - Change Email Address', "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=".concat(emailCode, "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team"));
                 return [2 /*return*/];
         }
     });
@@ -662,7 +662,7 @@ fastify.post('/api/user/forgot-password', function (request, reply) { return __a
                 return [4 /*yield*/, dbQuery('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
             case 3:
                 _a.sent();
-                sendMail(body['emailAddress'], 'PetrolShare - Forgot your Password', "Hi!<br><br>We have received a request to reset your password. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/reset-password?code=" + emailCode + "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team");
+                sendMail(body['emailAddress'], 'PetrolShare - Forgot your Password', "Hi!<br><br>We have received a request to reset your password. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/reset-password?code=".concat(emailCode, "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team"));
                 return [2 /*return*/];
         }
     });
@@ -882,7 +882,7 @@ fastify.post('/api/distance/assign', function (request, reply) { return __awaite
                 user = _a.sent();
                 if (!user.length)
                     return [2 /*return*/, reply.code(400).send('This user does not exist!')];
-                sendNotification([{ notificationKey: user[0].notificationKey }], userData[0].fullName + " has requested to add the distance of " + body["distance"] + groupData[0].distance + " to your account! Click on this notification to respond", { route: 'Dashboard' });
+                sendNotification([{ notificationKey: user[0].notificationKey }], "".concat(userData[0].fullName, " has requested to add the distance of ").concat(body["distance"]).concat(groupData[0].distance, " to your account! Click on this notification to respond"), { route: 'Dashboard' });
                 _a.label = 5;
             case 5:
                 _a.trys.push([5, 7, , 8]);
@@ -1258,7 +1258,7 @@ fastify.post('/api/petrol/add', function (request, reply) { return __awaiter(voi
                     map[obj.userID] = obj;
                     return map;
                 }, {});
-                sendNotification(Object.values(notifications), "You have a new invoice waiting!", { route: "Invoices", invoiceID: res["insertId"] });
+                sendNotification(Object.values(notifications), "You have a new payment request waiting!", { route: "Payments", invoiceID: res["insertId"] });
                 reply.send(res['insertId']);
                 return [2 /*return*/];
         }
@@ -1429,6 +1429,36 @@ fastify.post('/api/invoices/assign', function (request, reply) { return __awaite
         }
     });
 }); });
+fastify.post('/api/invoices/alert', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var body, userID, user;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                body = request.body;
+                if (!body || !('authenticationKey' in body) || !('fullName' in body) || !('invoiceID' in body)) {
+                    return [2 /*return*/, reply.code(400).send('Missing required field!')];
+                }
+                return [4 /*yield*/, retrieveID(body['authenticationKey'])];
+            case 1:
+                userID = _a.sent();
+                if (!userID)
+                    return [2 /*return*/, reply.code(400).send('No user found!')];
+                return [4 /*yield*/, dbQuery('SELECT notificationKey FROM users WHERE fullName=?', [body['fullName']])];
+            case 2:
+                user = _a.sent();
+                if (!user.length)
+                    return [2 /*return*/, reply.code(400).send('There is no user with that name!')];
+                if (user[0].notificationKey) {
+                    sendNotification([{ notificationKey: user[0].notificationKey }], "You have a payment request waiting and havent dealt with it yet! ".concat(body['fullName'], " has asked for your attention on it!"), { route: "Payments", invoiceID: body["invoiceID"] });
+                }
+                else {
+                    return [2 /*return*/, reply.code(400).send('This user is using the web version of the app and as such we cannot send them notifications!')];
+                }
+                reply.send();
+                return [2 /*return*/];
+        }
+    });
+}); });
 // EMAIL
 fastify.get('/email/verify', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     var query, results;
@@ -1475,7 +1505,7 @@ fastify.post('/email/resend', function (request, reply) { return __awaiter(void 
                 return [4 /*yield*/, dbInsert('UPDATE users SET verificationCode=? WHERE emailAddress=?', [emailCode, body['emailAddress']])];
             case 2:
                 _a.sent();
-                sendMail(body['emailAddress'], 'Verify your Mail', "Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=" + emailCode + "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>");
+                sendMail(body['emailAddress'], 'Verify your Mail', "Hey,<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=".concat(emailCode, "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>"));
                 return [2 /*return*/];
         }
     });
@@ -1528,7 +1558,7 @@ fastify.get('/email/deactivate', function (request, reply) { return __awaiter(vo
                 return [4 /*yield*/, dbInsert('UPDATE users SET active=0, verificationCode=? WHERE verificationCode=?', [verificationCode, query['code']])];
             case 3:
                 _a.sent();
-                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivated', "Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/activate?code=" + verificationCode + "\" target=\"_blank\">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team");
+                sendMail(results[0]['emailAddress'], 'PetrolShare - Account Deactivated', "Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/activate?code=".concat(verificationCode, "\" target=\"_blank\">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team"));
                 return [4 /*yield*/, reply.sendFile('deactivated.html')];
             case 4:
                 _a.sent();
@@ -1562,7 +1592,7 @@ fastify.get('/email/activate', function (request, reply) { return __awaiter(void
 }); });
 fastify.get('/test', function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        sendNotification([{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }], 'Testing...', { route: 'Invoices', invoiceID: 440 });
+        sendNotification([{ notificationKey: "ExponentPushToken[sfla3FFeNCccGYE_0EUv_d]" }], 'Testing...', { route: 'Payments', invoiceID: 440 });
         return [2 /*return*/];
     });
 }); });
@@ -1580,7 +1610,7 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
                 continue;
             // // Check that all your push tokens appear to be valid Expo push tokens
             if (!expo_server_sdk_1.default.isExpoPushToken(pushToken["notificationKey"])) {
-                console.error("Push token " + pushToken["notificationKey"] + " is not a valid Expo push token");
+                console.error("Push token ".concat(pushToken["notificationKey"], " is not a valid Expo push token"));
                 continue;
             }
             // // Construct a message (see https://docs.expo.io/push-notifications/sending-notifications/)
@@ -1658,9 +1688,9 @@ var sendNotification = function (notifKeys, message, route) { return __awaiter(v
                                 continue;
                             }
                             else if (status_1 === 'error') {
-                                console.error("There was an error sending a notification: " + message_1);
+                                console.error("There was an error sending a notification: ".concat(message_1));
                                 if (details && details.error) {
-                                    console.error("The error code is " + details.error);
+                                    console.error("The error code is ".concat(details.error));
                                 }
                             }
                         }
