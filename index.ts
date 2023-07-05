@@ -93,6 +93,22 @@ const generateEmailCode = async (): Promise<string> => {
         return generateEmailCode();
     return result;
 };
+const generateUniqueURL = async (): Promise<string> => {
+    let result = "";
+    const characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const charactersLength = characters.length;
+    for (var i = 0; i < 25; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    if (
+        (await dbQuery("SELECT * from invoices where uniqueURL=?", [result]))
+            .length
+    )
+        return generateUniqueURL();
+    return result;
+};
 
 const generateCode = async (): Promise<string> => {
     let result = "";
@@ -1236,7 +1252,7 @@ fastify.post<{
     );
 
     const res: any = await dbInsert(
-        "INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter) VALUES (?,?,?,?,?,?,?)",
+        "INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter, uniqueURL) VALUES (?,?,?,?,?,?,?,?)",
         [
             JSON.stringify(distances),
             results[0].sessionID,
@@ -1247,6 +1263,7 @@ fastify.post<{
             await retrieveID(body["authenticationKey"]),
             body["litersFilled"],
             pricePerLiter,
+            await generateUniqueURL()
         ]
     );
     let notifications = results.filter((e) => e.userID !== userID);
@@ -1287,8 +1304,8 @@ fastify.get<{ Querystring: { authenticationKey: string; invoiceID: string } }>(
         }
 
         let results = await dbQuery(
-            "SELECT u.fullName, i.invoiceData, i.totalDistance, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?",
-            [query["invoiceID"], await retrieveGroupID(query["authenticationKey"])]
+            "SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=?",
+            [query["invoiceID"]]
         );
         if (!results.length)
             return reply.code(400).send("There are no invoices with that ID!");
@@ -1318,9 +1335,63 @@ fastify.get<{ Querystring: { authenticationKey: string; invoiceID: string } }>(
             }
         }
 
-        await dbInsert("UPDATE invoices SET invoiceData=? WHERE invoiceID=?", [
-            results[0].invoiceData,
+
+        let uniqueURL = results[0]?.uniqueURL
+
+        if (!uniqueURL.length) uniqueURL = await generateUniqueURL()
+
+        await dbInsert("UPDATE invoices SET invoiceData=?, uniqueURL=? WHERE invoiceID=?", [
+            results[0].invoiceData, uniqueURL,
             query["invoiceID"],
+        ]);
+        reply.send(results[0]);
+    }
+);
+fastify.get<{ Querystring: { uniqueURL: string } }>(
+    "/api/invoices/public/get",
+    async (request, reply) => {
+        const { query } = request;
+
+        if (!query || !("uniqueURL" in query)) {
+            return reply.code(400).send("Missing required field!");
+        }
+
+        let results = await dbQuery(
+            "SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.uniqueURL=?",
+            [query["uniqueURL"]]
+        );
+        if (!results.length)
+            return reply.code(400).send("There are no invoices with that ID!");
+
+        for (let i = 0; i < results.length; i++) {
+            const e: {
+                fullName: string;
+                invoiceData: string;
+                totalDistance: string;
+                sessionEnd: string;
+                totalPrice: string;
+            } = results[i];
+            let data: {
+                [key: string]: {
+                    distance: number;
+                    fullName: string;
+                    paymentDue?: number;
+                    paid?: boolean;
+                };
+            } = JSON.parse(e.invoiceData);
+
+            for (let i = 0; i < Object.keys(data).length; i++) {
+                let key = Object.keys(data)[i];
+                const name = await retrieveName(key);
+                if (name) data[key]["fullName"] = name;
+                e.invoiceData = JSON.stringify(data);
+            }
+        }
+
+
+        await dbInsert("UPDATE invoices SET invoiceData=? WHERE uniqueURL=?", [
+            results[0].invoiceData,
+            query["uniqueURL"],
         ]);
         reply.send(results[0]);
     }

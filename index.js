@@ -174,6 +174,26 @@ var generateEmailCode = function () { return __awaiter(void 0, void 0, void 0, f
         }
     });
 }); };
+var generateUniqueURL = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var result, characters, charactersLength, i;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                result = "";
+                characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                charactersLength = characters.length;
+                for (i = 0; i < 25; i++) {
+                    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+                }
+                return [4 /*yield*/, dbQuery("SELECT * from invoices where uniqueURL=?", [result])];
+            case 1:
+                if ((_a.sent())
+                    .length)
+                    return [2 /*return*/, generateUniqueURL()];
+                return [2 /*return*/, result];
+        }
+    });
+}); };
 var generateCode = function () { return __awaiter(void 0, void 0, void 0, function () {
     var result, characters, charactersLength, i;
     return __generator(this, function (_a) {
@@ -1375,18 +1395,23 @@ fastify.post("/api/petrol/add", function (request, reply) { return __awaiter(voi
             case 7:
                 _m.sent();
                 _j = dbInsert;
-                _k = ["INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter) VALUES (?,?,?,?,?,?,?)"];
+                _k = ["INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter, uniqueURL) VALUES (?,?,?,?,?,?,?,?)"];
                 _l = [JSON.stringify(distances),
                     results[0].sessionID,
                     body["totalPrice"],
                     Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100];
                 return [4 /*yield*/, retrieveID(body["authenticationKey"])];
-            case 8: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([
-                        _m.sent(),
-                        body["litersFilled"],
-                        pricePerLiter
+            case 8:
+                _l = _l.concat([
+                    _m.sent(),
+                    body["litersFilled"],
+                    pricePerLiter
+                ]);
+                return [4 /*yield*/, generateUniqueURL()];
+            case 9: return [4 /*yield*/, _j.apply(void 0, _k.concat([_l.concat([
+                        _m.sent()
                     ])]))];
-            case 9:
+            case 10:
                 res = _m.sent();
                 notifications = results.filter(function (e) { return e.userID !== userID; });
                 notifications = notifications.reduce(function (map, obj) {
@@ -1401,9 +1426,10 @@ fastify.post("/api/petrol/add", function (request, reply) { return __awaiter(voi
 }); });
 // INVOICES
 fastify.get("/api/invoices/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, userID, results_1, _a, _b, results, _c, _d, _e, i, e, data, i_1, key, name_1;
-    return __generator(this, function (_f) {
-        switch (_f.label) {
+    var query, userID, results_1, _a, _b, results, i, e, data, i_1, key, name_1, uniqueURL;
+    var _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 query = request.query;
                 if (!query || !("authenticationKey" in query)) {
@@ -1411,59 +1437,110 @@ fastify.get("/api/invoices/get", function (request, reply) { return __awaiter(vo
                 }
                 return [4 /*yield*/, retrieveID(query["authenticationKey"])];
             case 1:
-                userID = _f.sent();
+                userID = _d.sent();
                 if (!userID)
                     return [2 /*return*/, reply.code(400).send("No user found!")];
                 if (!!("invoiceID" in query)) return [3 /*break*/, 4];
                 _a = dbQuery;
                 _b = ["SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC"];
                 return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
-            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_f.sent()]]))];
+            case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_d.sent()]]))];
             case 3:
-                results_1 = _f.sent();
+                results_1 = _d.sent();
                 if (!results_1.length)
                     return [2 /*return*/, reply.code(400).send("There are no invoices in that group!")];
                 return [2 /*return*/, reply.send(results_1)];
-            case 4:
-                _c = dbQuery;
-                _d = ["SELECT u.fullName, i.invoiceData, i.totalDistance, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=? AND s.groupID=?"];
-                _e = [query["invoiceID"]];
-                return [4 /*yield*/, retrieveGroupID(query["authenticationKey"])];
-            case 5: return [4 /*yield*/, _c.apply(void 0, _d.concat([_e.concat([_f.sent()])]))];
-            case 6:
-                results = _f.sent();
+            case 4: return [4 /*yield*/, dbQuery("SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=?", [query["invoiceID"]])];
+            case 5:
+                results = _d.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There are no invoices with that ID!")];
                 i = 0;
-                _f.label = 7;
-            case 7:
-                if (!(i < results.length)) return [3 /*break*/, 12];
+                _d.label = 6;
+            case 6:
+                if (!(i < results.length)) return [3 /*break*/, 11];
                 e = results[i];
                 data = JSON.parse(e.invoiceData);
                 i_1 = 0;
-                _f.label = 8;
-            case 8:
-                if (!(i_1 < Object.keys(data).length)) return [3 /*break*/, 11];
+                _d.label = 7;
+            case 7:
+                if (!(i_1 < Object.keys(data).length)) return [3 /*break*/, 10];
                 key = Object.keys(data)[i_1];
                 return [4 /*yield*/, retrieveName(key)];
-            case 9:
-                name_1 = _f.sent();
+            case 8:
+                name_1 = _d.sent();
                 if (name_1)
                     data[key]["fullName"] = name_1;
                 e.invoiceData = JSON.stringify(data);
-                _f.label = 10;
-            case 10:
+                _d.label = 9;
+            case 9:
                 i_1++;
-                return [3 /*break*/, 8];
-            case 11:
-                i++;
                 return [3 /*break*/, 7];
-            case 12: return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=? WHERE invoiceID=?", [
-                    results[0].invoiceData,
+            case 10:
+                i++;
+                return [3 /*break*/, 6];
+            case 11:
+                uniqueURL = (_c = results[0]) === null || _c === void 0 ? void 0 : _c.uniqueURL;
+                if (!!uniqueURL.length) return [3 /*break*/, 13];
+                return [4 /*yield*/, generateUniqueURL()];
+            case 12:
+                uniqueURL = _d.sent();
+                _d.label = 13;
+            case 13: return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=?, uniqueURL=? WHERE invoiceID=?", [
+                    results[0].invoiceData, uniqueURL,
                     query["invoiceID"],
                 ])];
-            case 13:
-                _f.sent();
+            case 14:
+                _d.sent();
+                reply.send(results[0]);
+                return [2 /*return*/];
+        }
+    });
+}); });
+fastify.get("/api/invoices/public/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+    var query, results, i, e, data, i_2, key, name_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                query = request.query;
+                if (!query || !("uniqueURL" in query)) {
+                    return [2 /*return*/, reply.code(400).send("Missing required field!")];
+                }
+                return [4 /*yield*/, dbQuery("SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.uniqueURL=?", [query["uniqueURL"]])];
+            case 1:
+                results = _a.sent();
+                if (!results.length)
+                    return [2 /*return*/, reply.code(400).send("There are no invoices with that ID!")];
+                i = 0;
+                _a.label = 2;
+            case 2:
+                if (!(i < results.length)) return [3 /*break*/, 7];
+                e = results[i];
+                data = JSON.parse(e.invoiceData);
+                i_2 = 0;
+                _a.label = 3;
+            case 3:
+                if (!(i_2 < Object.keys(data).length)) return [3 /*break*/, 6];
+                key = Object.keys(data)[i_2];
+                return [4 /*yield*/, retrieveName(key)];
+            case 4:
+                name_2 = _a.sent();
+                if (name_2)
+                    data[key]["fullName"] = name_2;
+                e.invoiceData = JSON.stringify(data);
+                _a.label = 5;
+            case 5:
+                i_2++;
+                return [3 /*break*/, 3];
+            case 6:
+                i++;
+                return [3 /*break*/, 2];
+            case 7: return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=? WHERE uniqueURL=?", [
+                    results[0].invoiceData,
+                    query["uniqueURL"],
+                ])];
+            case 8:
+                _a.sent();
                 reply.send(results[0]);
                 return [2 /*return*/];
         }
