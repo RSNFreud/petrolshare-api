@@ -1481,7 +1481,7 @@ fastify.get("/api/invoices/get", function (request, reply) { return __awaiter(vo
                 return [3 /*break*/, 6];
             case 11:
                 uniqueURL = (_c = results[0]) === null || _c === void 0 ? void 0 : _c.uniqueURL;
-                if (!!uniqueURL.length) return [3 /*break*/, 13];
+                if (!!(uniqueURL === null || uniqueURL === void 0 ? void 0 : uniqueURL.length)) return [3 /*break*/, 13];
                 return [4 /*yield*/, generateUniqueURL()];
             case 12:
                 uniqueURL = _d.sent();

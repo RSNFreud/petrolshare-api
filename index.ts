@@ -1338,7 +1338,7 @@ fastify.get<{ Querystring: { authenticationKey: string; invoiceID: string } }>(
 
         let uniqueURL = results[0]?.uniqueURL
 
-        if (!uniqueURL.length) uniqueURL = await generateUniqueURL()
+        if (!uniqueURL?.length) uniqueURL = await generateUniqueURL()
 
         await dbInsert("UPDATE invoices SET invoiceData=?, uniqueURL=? WHERE invoiceID=?", [
             results[0].invoiceData, uniqueURL,
