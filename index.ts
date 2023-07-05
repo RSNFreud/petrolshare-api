@@ -1360,11 +1360,14 @@ fastify.get<{ Querystring: { uniqueURL: string } }>(
         }
 
         let results = await dbQuery(
-            "SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.uniqueURL=?",
+            "SELECT u.fullName, i.invoiceData, i.totalDistance, u.userID, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.uniqueURL=?",
             [query["uniqueURL"]]
         );
         if (!results.length)
             return reply.code(400).send("There are no invoices with that ID!");
+
+        const groupID = await dbQuery('SELECT groupID FROM users WHERE userID=?', [results[0].userID])
+        const groupData = groupID ? await dbQuery('SELECT distance, currency, petrol FROM groups WHERE groupID=?', [groupID[0].groupID]) : undefined
 
         for (let i = 0; i < results.length; i++) {
             const e: {
@@ -1396,7 +1399,11 @@ fastify.get<{ Querystring: { uniqueURL: string } }>(
             results[0].invoiceData,
             query["uniqueURL"],
         ]);
-        reply.send(results[0]);
+        delete results[0]?.userID
+        if (groupData)
+            reply.send({ ...results[0], ...groupData[0] });
+        else
+            reply.send(results[0]);
     }
 );
 

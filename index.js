@@ -1499,50 +1499,68 @@ fastify.get("/api/invoices/get", function (request, reply) { return __awaiter(vo
     });
 }); });
 fastify.get("/api/invoices/public/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    var query, results, i, e, data, i_2, key, name_2;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var query, results, groupID, groupData, _a, i, e, data, i_2, key, name_2;
+    var _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
             case 0:
                 query = request.query;
                 if (!query || !("uniqueURL" in query)) {
                     return [2 /*return*/, reply.code(400).send("Missing required field!")];
                 }
-                return [4 /*yield*/, dbQuery("SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.uniqueURL=?", [query["uniqueURL"]])];
+                return [4 /*yield*/, dbQuery("SELECT u.fullName, i.invoiceData, i.totalDistance, u.userID, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.uniqueURL=?", [query["uniqueURL"]])];
             case 1:
-                results = _a.sent();
+                results = _c.sent();
                 if (!results.length)
                     return [2 /*return*/, reply.code(400).send("There are no invoices with that ID!")];
-                i = 0;
-                _a.label = 2;
+                return [4 /*yield*/, dbQuery('SELECT groupID FROM users WHERE userID=?', [results[0].userID])];
             case 2:
-                if (!(i < results.length)) return [3 /*break*/, 7];
+                groupID = _c.sent();
+                if (!groupID) return [3 /*break*/, 4];
+                return [4 /*yield*/, dbQuery('SELECT distance, currency, petrol FROM groups WHERE groupID=?', [groupID[0].groupID])];
+            case 3:
+                _a = _c.sent();
+                return [3 /*break*/, 5];
+            case 4:
+                _a = undefined;
+                _c.label = 5;
+            case 5:
+                groupData = _a;
+                i = 0;
+                _c.label = 6;
+            case 6:
+                if (!(i < results.length)) return [3 /*break*/, 11];
                 e = results[i];
                 data = JSON.parse(e.invoiceData);
                 i_2 = 0;
-                _a.label = 3;
-            case 3:
-                if (!(i_2 < Object.keys(data).length)) return [3 /*break*/, 6];
+                _c.label = 7;
+            case 7:
+                if (!(i_2 < Object.keys(data).length)) return [3 /*break*/, 10];
                 key = Object.keys(data)[i_2];
                 return [4 /*yield*/, retrieveName(key)];
-            case 4:
-                name_2 = _a.sent();
+            case 8:
+                name_2 = _c.sent();
                 if (name_2)
                     data[key]["fullName"] = name_2;
                 e.invoiceData = JSON.stringify(data);
-                _a.label = 5;
-            case 5:
+                _c.label = 9;
+            case 9:
                 i_2++;
-                return [3 /*break*/, 3];
-            case 6:
+                return [3 /*break*/, 7];
+            case 10:
                 i++;
-                return [3 /*break*/, 2];
-            case 7: return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=? WHERE uniqueURL=?", [
+                return [3 /*break*/, 6];
+            case 11: return [4 /*yield*/, dbInsert("UPDATE invoices SET invoiceData=? WHERE uniqueURL=?", [
                     results[0].invoiceData,
                     query["uniqueURL"],
                 ])];
-            case 8:
-                _a.sent();
-                reply.send(results[0]);
+            case 12:
+                _c.sent();
+                (_b = results[0]) === null || _b === void 0 ? true : delete _b.userID;
+                if (groupData)
+                    reply.send(__assign(__assign({}, results[0]), groupData[0]));
+                else
+                    reply.send(results[0]);
                 return [2 /*return*/];
         }
     });
