@@ -1304,7 +1304,7 @@ fastify.get<{ Querystring: { authenticationKey: string; invoiceID: string } }>(
         }
 
         let results = await dbQuery(
-            "SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=?",
+            "SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice, u.emailAddress FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=?",
             [query["invoiceID"]]
         );
         if (!results.length)
@@ -1329,8 +1329,9 @@ fastify.get<{ Querystring: { authenticationKey: string; invoiceID: string } }>(
 
             for (let i = 0; i < Object.keys(data).length; i++) {
                 let key = Object.keys(data)[i];
-                const name = await retrieveName(key);
-                if (name) data[key]["fullName"] = name;
+                console.log(key);
+                const name = await dbQuery('SELECT fullName, emailAddress FROM users WHERE userID=?', [key]);
+                if (name) data[key] = { ...data[key], ...name[0] };
                 e.invoiceData = JSON.stringify(data);
             }
         }

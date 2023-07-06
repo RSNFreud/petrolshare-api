@@ -1450,7 +1450,7 @@ fastify.get("/api/invoices/get", function (request, reply) { return __awaiter(vo
                 if (!results_1.length)
                     return [2 /*return*/, reply.code(400).send("There are no invoices in that group!")];
                 return [2 /*return*/, reply.send(results_1)];
-            case 4: return [4 /*yield*/, dbQuery("SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=?", [query["invoiceID"]])];
+            case 4: return [4 /*yield*/, dbQuery("SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice, u.emailAddress FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=?", [query["invoiceID"]])];
             case 5:
                 results = _d.sent();
                 if (!results.length)
@@ -1466,11 +1466,12 @@ fastify.get("/api/invoices/get", function (request, reply) { return __awaiter(vo
             case 7:
                 if (!(i_1 < Object.keys(data).length)) return [3 /*break*/, 10];
                 key = Object.keys(data)[i_1];
-                return [4 /*yield*/, retrieveName(key)];
+                console.log(key);
+                return [4 /*yield*/, dbQuery('SELECT fullName, emailAddress FROM users WHERE userID=?', [key])];
             case 8:
                 name_1 = _d.sent();
                 if (name_1)
-                    data[key]["fullName"] = name_1;
+                    data[key] = __assign(__assign({}, data[key]), name_1[0]);
                 e.invoiceData = JSON.stringify(data);
                 _d.label = 9;
             case 9:
