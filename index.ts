@@ -25,35 +25,15 @@ fastify.register(require("@fastify/view"), {
     },
 });
 
-const prefix = 'beta'
-
-fastify.register(distance, {
-    prefix: prefix
-})
-fastify.register(email, {
-    prefix: prefix
-})
-fastify.register(group, {
-    prefix: prefix
-})
-fastify.register(invoices, {
-    prefix: prefix
-})
-fastify.register(logs, {
-    prefix: prefix
-})
-fastify.register(notify, {
-    prefix: prefix
-})
-fastify.register(petrol, {
-    prefix: prefix
-})
-fastify.register(presets, {
-    prefix: prefix
-})
-fastify.register(user, {
-    prefix: prefix
-})
+fastify.register(distance)
+fastify.register(email)
+fastify.register(group)
+fastify.register(invoices)
+fastify.register(logs)
+fastify.register(notify)
+fastify.register(petrol)
+fastify.register(presets)
+fastify.register(user)
 
 fastify.register(cors);
 
@@ -84,8 +64,8 @@ setInterval(() => {
 // Run the server!
 const start = async () => {
     try {
-        await fastify.listen({ port: 3434 });
-        console.log("Listening to traffic on 3434");
+        await fastify.listen({ port: 3435 });
+        console.log("Listening to traffic on 3435");
     } catch (err) {
         console.log(err);
 
