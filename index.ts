@@ -20,22 +20,38 @@ fastify.register(require("@fastify/static"), {
 });
 
 fastify.register(require("@fastify/view"), {
-    root: 'pages',
-    prefix: 'pages',
     engine: {
         ejs: require("ejs"),
     },
 });
 
-fastify.register(distance)
-fastify.register(email)
-fastify.register(group)
-fastify.register(invoices)
-fastify.register(logs)
-fastify.register(notify)
-fastify.register(petrol)
-fastify.register(presets)
-fastify.register(user)
+fastify.register(distance, {
+    prefix: 'beta'
+})
+fastify.register(email, {
+    prefix: 'beta'
+})
+fastify.register(group, {
+    prefix: 'beta'
+})
+fastify.register(invoices, {
+    prefix: 'beta'
+})
+fastify.register(logs, {
+    prefix: 'beta'
+})
+fastify.register(notify, {
+    prefix: 'beta'
+})
+fastify.register(petrol, {
+    prefix: 'beta'
+})
+fastify.register(presets, {
+    prefix: 'beta'
+})
+fastify.register(user, {
+    prefix: 'beta'
+})
 
 fastify.register(cors);
 
@@ -50,10 +66,6 @@ conn.connect();
 setInterval(() => {
     deleteEmptyGroups();
 }, 86400000);
-
-fastify.get("/", (req, reply) => {
-    reply.view("fail.html");
-});
 
 // // EMAIL
 // fastify.get<{ Querystring: { code: string } }>(
@@ -73,6 +85,8 @@ const start = async () => {
         await fastify.listen({ port: 3434 });
         console.log("Listening to traffic on 3434");
     } catch (err) {
+        console.log(err);
+
         fastify.log.error(err);
         process.exit(1);
     }

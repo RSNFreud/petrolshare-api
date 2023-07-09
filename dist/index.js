@@ -59,21 +59,37 @@ exports.fastify.register(require("@fastify/static"), {
     root: __dirname,
 });
 exports.fastify.register(require("@fastify/view"), {
-    root: 'pages',
-    prefix: 'pages',
     engine: {
         ejs: require("ejs"),
     },
 });
-exports.fastify.register(distance_1.default);
-exports.fastify.register(email_1.default);
-exports.fastify.register(group_1.default);
-exports.fastify.register(invoices_1.default);
-exports.fastify.register(logs_1.default);
-exports.fastify.register(notify_1.default);
-exports.fastify.register(petrol_1.default);
-exports.fastify.register(presets_1.default);
-exports.fastify.register(user_1.default);
+exports.fastify.register(distance_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(email_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(group_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(invoices_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(logs_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(notify_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(petrol_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(presets_1.default, {
+    prefix: 'beta'
+});
+exports.fastify.register(user_1.default, {
+    prefix: 'beta'
+});
 exports.fastify.register(cors_1.default);
 exports.conn = mysql_1.default.createConnection({
     host: process.env.DB_HOST,
@@ -85,9 +101,6 @@ exports.conn.connect();
 setInterval(function () {
     (0, hooks_1.deleteEmptyGroups)();
 }, 86400000);
-exports.fastify.get("/", function (req, reply) {
-    reply.view("fail.html");
-});
 // // EMAIL
 // fastify.get<{ Querystring: { code: string } }>(
 //     "/test",
@@ -113,6 +126,7 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 return [3 /*break*/, 3];
             case 2:
                 err_1 = _a.sent();
+                console.log(err_1);
                 exports.fastify.log.error(err_1);
                 process.exit(1);
                 return [3 /*break*/, 3];
