@@ -63,32 +63,33 @@ exports.fastify.register(require("@fastify/view"), {
         ejs: require("ejs"),
     },
 });
+var prefix = 'beta';
 exports.fastify.register(distance_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(email_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(group_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(invoices_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(logs_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(notify_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(petrol_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(presets_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(user_1.default, {
-    prefix: 'beta'
+    prefix: prefix
 });
 exports.fastify.register(cors_1.default);
 exports.conn = mysql_1.default.createConnection({
