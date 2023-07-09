@@ -61,8 +61,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         "/email/reset-password",
         async (request, reply) => {
             const { query } = request;
-            console.log(path.resolve("pages/fail.html"));
-
 
             if (!query || !("code" in query)) {
                 return reply.code(400).send("Missing required field!");
@@ -72,7 +70,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 "SELECT fullName, verified FROM users WHERE verificationCode=?",
                 [query["code"]]
             );
-            if (!results.length) return reply.code(400).sendFile("fail.html");
+            if (!results.length) return reply.code(400).sendFile("/pages/fail.html");
             const password = generateTempPassword();
 
             await dbInsert(

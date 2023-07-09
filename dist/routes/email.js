@@ -41,7 +41,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var hooks_1 = require("../hooks");
 var argon2_1 = __importDefault(require("argon2"));
-var path_1 = __importDefault(require("path"));
 exports.default = (function (fastify, _, done) {
     fastify.get("/email/verify", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
         var query, results;
@@ -102,7 +101,6 @@ exports.default = (function (fastify, _, done) {
             switch (_c.label) {
                 case 0:
                     query = request.query;
-                    console.log(path_1.default.resolve("pages/fail.html"));
                     if (!query || !("code" in query)) {
                         return [2 /*return*/, reply.code(400).send("Missing required field!")];
                     }
@@ -110,7 +108,7 @@ exports.default = (function (fastify, _, done) {
                 case 1:
                     results = _c.sent();
                     if (!results.length)
-                        return [2 /*return*/, reply.code(400).sendFile("fail.html")];
+                        return [2 /*return*/, reply.code(400).sendFile("/pages/fail.html")];
                     password = (0, hooks_1.generateTempPassword)();
                     _a = hooks_1.dbInsert;
                     _b = ["UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?"];
