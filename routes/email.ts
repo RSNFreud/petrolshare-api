@@ -17,7 +17,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 "SELECT fullName, verified, tempEmail FROM users WHERE verificationCode=?",
                 [query["code"]]
             );
-            if (!results.length) return reply.code(400).sendFile("pages/fail.html");
+            if (!results.length) return reply.code(400).sendFile("pages/fail.html", { root: '.' });
 
             if (results[0].verified && results[0].tempEmail)
                 await dbInsert(
@@ -29,7 +29,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                     "UPDATE users SET verified=1, verificationCode=null WHERE verificationCode=?",
                     [query["code"]]
                 );
-            await reply.sendFile("pages/success.html");
+            await reply.sendFile("pages/success.html", { root: '.' });
         }
     );
 
@@ -70,7 +70,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 "SELECT fullName, verified FROM users WHERE verificationCode=?",
                 [query["code"]]
             );
-            if (!results.length) return reply.code(400).sendFile("/pages/fail.html");
+            if (!results.length) return reply.code(400).sendFile("fail.html", { root: './pages' });
             const password = generateTempPassword();
 
             await dbInsert(
@@ -78,7 +78,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 [await argon2.hash(password), query["code"]]
             );
 
-            await reply.view("pages/reset-password.ejs", { password: password });
+            await reply.view("reset-password.ejs", { password: password, root: './pages' });
         }
     );
 
@@ -96,7 +96,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 [query["code"]]
             );
             const verificationCode = await generateEmailCode();
-            if (!results.length) return reply.code(400).sendFile("pages/fail.html");
+            if (!results.length) return reply.code(400).sendFile("pages/fail.html", { root: '.' });
 
             await dbInsert(
                 "UPDATE users SET active=0, verificationCode=? WHERE verificationCode=?",
@@ -107,7 +107,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 "PetrolShare - Account Deactivated",
                 `Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href="https://petrolshare.freud-online.co.uk/email/activate?code=${verificationCode}" target="_blank">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team`
             );
-            await reply.sendFile("pages/deactivated.html");
+            await reply.sendFile("pages/deactivated.html", { root: '.' });
         }
     );
 
@@ -124,13 +124,13 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 "SELECT fullName, emailAddress FROM users WHERE verificationCode=?",
                 [query["code"]]
             );
-            if (!results.length) return reply.code(400).sendFile("pages/fail.html");
+            if (!results.length) return reply.code(400).sendFile("pages/fail.html", { root: '.' });
 
             await dbInsert(
                 "UPDATE users SET active=1, verificationCode=NULL WHERE verificationCode=?",
                 [query["code"]]
             );
-            await reply.sendFile("pages/activated.html");
+            await reply.sendFile("pages/activated.html", { root: '.' });
         }
     );
     done()

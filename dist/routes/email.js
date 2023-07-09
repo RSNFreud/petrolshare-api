@@ -55,7 +55,7 @@ exports.default = (function (fastify, _, done) {
                 case 1:
                     results = _a.sent();
                     if (!results.length)
-                        return [2 /*return*/, reply.code(400).sendFile("pages/fail.html")];
+                        return [2 /*return*/, reply.code(400).sendFile("pages/fail.html", { root: '.' })];
                     if (!(results[0].verified && results[0].tempEmail)) return [3 /*break*/, 3];
                     return [4 /*yield*/, (0, hooks_1.dbInsert)("UPDATE users SET emailAddress=?, verificationCode=null, tempEmail=null WHERE verificationCode=?", [results[0].tempEmail, query["code"]])];
                 case 2:
@@ -65,7 +65,7 @@ exports.default = (function (fastify, _, done) {
                 case 4:
                     _a.sent();
                     _a.label = 5;
-                case 5: return [4 /*yield*/, reply.sendFile("pages/success.html")];
+                case 5: return [4 /*yield*/, reply.sendFile("pages/success.html", { root: '.' })];
                 case 6:
                     _a.sent();
                     return [2 /*return*/];
@@ -108,7 +108,7 @@ exports.default = (function (fastify, _, done) {
                 case 1:
                     results = _c.sent();
                     if (!results.length)
-                        return [2 /*return*/, reply.code(400).sendFile("/pages/fail.html")];
+                        return [2 /*return*/, reply.code(400).sendFile("fail.html", { root: './pages' })];
                     password = (0, hooks_1.generateTempPassword)();
                     _a = hooks_1.dbInsert;
                     _b = ["UPDATE users SET password=?, authenticationKey=null, verificationCode=null WHERE verificationCode=?"];
@@ -116,7 +116,7 @@ exports.default = (function (fastify, _, done) {
                 case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent(), query["code"]]]))];
                 case 3:
                     _c.sent();
-                    return [4 /*yield*/, reply.view("pages/reset-password.ejs", { password: password })];
+                    return [4 /*yield*/, reply.view("reset-password.ejs", { password: password, root: './pages' })];
                 case 4:
                     _c.sent();
                     return [2 /*return*/];
@@ -139,12 +139,12 @@ exports.default = (function (fastify, _, done) {
                 case 2:
                     verificationCode = _a.sent();
                     if (!results.length)
-                        return [2 /*return*/, reply.code(400).sendFile("pages/fail.html")];
+                        return [2 /*return*/, reply.code(400).sendFile("pages/fail.html", { root: '.' })];
                     return [4 /*yield*/, (0, hooks_1.dbInsert)("UPDATE users SET active=0, verificationCode=? WHERE verificationCode=?", [verificationCode, query["code"]])];
                 case 3:
                     _a.sent();
                     (0, hooks_1.sendMail)(results[0]["emailAddress"], "PetrolShare - Account Deactivated", "Hi!<br><br>Your account has now been deactivated and will be deleted in the next 24 hours. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/activate?code=".concat(verificationCode, "\" target=\"_blank\">here<a/> to reactivate it.<br><br>Thanks<br>The PetrolShare Team"));
-                    return [4 /*yield*/, reply.sendFile("pages/deactivated.html")];
+                    return [4 /*yield*/, reply.sendFile("pages/deactivated.html", { root: '.' })];
                 case 4:
                     _a.sent();
                     return [2 /*return*/];
@@ -164,11 +164,11 @@ exports.default = (function (fastify, _, done) {
                 case 1:
                     results = _a.sent();
                     if (!results.length)
-                        return [2 /*return*/, reply.code(400).sendFile("pages/fail.html")];
+                        return [2 /*return*/, reply.code(400).sendFile("pages/fail.html", { root: '.' })];
                     return [4 /*yield*/, (0, hooks_1.dbInsert)("UPDATE users SET active=1, verificationCode=NULL WHERE verificationCode=?", [query["code"]])];
                 case 2:
                     _a.sent();
-                    return [4 /*yield*/, reply.sendFile("pages/activated.html")];
+                    return [4 /*yield*/, reply.sendFile("pages/activated.html", { root: '.' })];
                 case 3:
                     _a.sent();
                     return [2 /*return*/];

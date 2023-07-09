@@ -59,6 +59,8 @@ exports.fastify.register(require("@fastify/static"), {
     root: __dirname,
 });
 exports.fastify.register(require("@fastify/view"), {
+    root: 'pages',
+    prefix: 'pages',
     engine: {
         ejs: require("ejs"),
     },
@@ -83,13 +85,20 @@ exports.conn.connect();
 setInterval(function () {
     (0, hooks_1.deleteEmptyGroups)();
 }, 86400000);
-// EMAIL
-exports.fastify.get("/test", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        (0, hooks_1.sendNotification)([{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }], "Testing...", { route: "Invoices", invoiceID: 440 });
-        return [2 /*return*/];
-    });
-}); });
+exports.fastify.get("/", function (req, reply) {
+    reply.view("fail.html");
+});
+// // EMAIL
+// fastify.get<{ Querystring: { code: string } }>(
+//     "/test",
+//     async (request, reply) => {
+//         sendNotification(
+//             [{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }],
+//             "Testing...",
+//             { route: "Invoices", invoiceID: 440 }
+//         );
+//     }
+// );
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
     var err_1;
@@ -104,7 +113,6 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
                 return [3 /*break*/, 3];
             case 2:
                 err_1 = _a.sent();
-                console.log(err_1);
                 exports.fastify.log.error(err_1);
                 process.exit(1);
                 return [3 /*break*/, 3];

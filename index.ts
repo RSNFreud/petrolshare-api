@@ -20,6 +20,8 @@ fastify.register(require("@fastify/static"), {
 });
 
 fastify.register(require("@fastify/view"), {
+    root: 'pages',
+    prefix: 'pages',
     engine: {
         ejs: require("ejs"),
     },
@@ -49,17 +51,21 @@ setInterval(() => {
     deleteEmptyGroups();
 }, 86400000);
 
-// EMAIL
-fastify.get<{ Querystring: { code: string } }>(
-    "/test",
-    async (request, reply) => {
-        sendNotification(
-            [{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }],
-            "Testing...",
-            { route: "Invoices", invoiceID: 440 }
-        );
-    }
-);
+fastify.get("/", (req, reply) => {
+    reply.view("fail.html");
+});
+
+// // EMAIL
+// fastify.get<{ Querystring: { code: string } }>(
+//     "/test",
+//     async (request, reply) => {
+//         sendNotification(
+//             [{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }],
+//             "Testing...",
+//             { route: "Invoices", invoiceID: 440 }
+//         );
+//     }
+// );
 
 // Run the server!
 const start = async () => {
@@ -67,8 +73,6 @@ const start = async () => {
         await fastify.listen({ port: 3434 });
         console.log("Listening to traffic on 3434");
     } catch (err) {
-        console.log(err);
-
         fastify.log.error(err);
         process.exit(1);
     }
