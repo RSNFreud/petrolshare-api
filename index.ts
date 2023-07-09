@@ -25,15 +25,35 @@ fastify.register(require("@fastify/view"), {
     },
 });
 
-fastify.register(distance)
-fastify.register(email)
-fastify.register(group)
-fastify.register(invoices)
-fastify.register(logs)
-fastify.register(notify)
-fastify.register(petrol)
-fastify.register(presets)
-fastify.register(user)
+const prefix = 'beta'
+
+fastify.register(distance, {
+    prefix: prefix
+})
+fastify.register(email, {
+    prefix: prefix
+})
+fastify.register(group, {
+    prefix: prefix
+})
+fastify.register(invoices, {
+    prefix: prefix
+})
+fastify.register(logs, {
+    prefix: prefix
+})
+fastify.register(notify, {
+    prefix: prefix
+})
+fastify.register(petrol, {
+    prefix: prefix
+})
+fastify.register(presets, {
+    prefix: prefix
+})
+fastify.register(user, {
+    prefix: prefix
+})
 
 fastify.register(cors);
 
