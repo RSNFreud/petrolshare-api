@@ -90,7 +90,6 @@ exports.default = (function (fastify, _, done) {
                 case 7:
                     if (!(i_1 < Object.keys(data).length)) return [3 /*break*/, 10];
                     key = Object.keys(data)[i_1];
-                    console.log(key);
                     return [4 /*yield*/, (0, hooks_1.dbQuery)('SELECT fullName, emailAddress FROM users WHERE userID=?', [key])];
                 case 8:
                     name_1 = _d.sent();

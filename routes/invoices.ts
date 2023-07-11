@@ -50,7 +50,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
                 for (let i = 0; i < Object.keys(data).length; i++) {
                     let key = Object.keys(data)[i];
-                    console.log(key);
                     const name = await dbQuery('SELECT fullName, emailAddress FROM users WHERE userID=?', [key]);
                     if (name) data[key] = { ...data[key], ...name[0] };
                     e.invoiceData = JSON.stringify(data);
