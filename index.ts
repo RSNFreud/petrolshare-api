@@ -25,7 +25,7 @@ fastify.register(require("@fastify/view"), {
     },
 });
 
-const prefix = 'beta'
+const prefix = ''
 
 fastify.register(distance, {
     prefix: prefix

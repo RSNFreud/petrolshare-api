@@ -63,7 +63,7 @@ exports.fastify.register(require("@fastify/view"), {
         ejs: require("ejs"),
     },
 });
-var prefix = 'beta';
+var prefix = '';
 exports.fastify.register(distance_1.default, {
     prefix: prefix
 });
