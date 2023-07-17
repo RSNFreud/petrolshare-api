@@ -43,7 +43,7 @@ export async function dbQuery(query: string, parameters?: string[]) {
     });
 }
 
-export async function dbInsert(query: string, parameters?: string[]) {
+export async function dbInsert(query: string, parameters?: Array<string | undefined>) {
     return new Promise<OkPacket>((res, rej) => {
         try {
             conn.query(query, parameters, (err, results) => {
