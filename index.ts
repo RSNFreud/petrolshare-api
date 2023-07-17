@@ -12,6 +12,7 @@ import notify from "./routes/notify";
 import petrol from "./routes/petrol";
 import presets from "./routes/presets";
 import user from "./routes/user";
+import schedules from "./routes/schedules";
 
 export const fastify: FastifyInstance = Fastify({});
 
@@ -52,6 +53,9 @@ fastify.register(presets, {
     prefix: prefix
 })
 fastify.register(user, {
+    prefix: prefix
+})
+fastify.register(schedules, {
     prefix: prefix
 })
 

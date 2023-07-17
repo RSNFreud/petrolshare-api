@@ -54,6 +54,7 @@ var notify_1 = __importDefault(require("./routes/notify"));
 var petrol_1 = __importDefault(require("./routes/petrol"));
 var presets_1 = __importDefault(require("./routes/presets"));
 var user_1 = __importDefault(require("./routes/user"));
+var schedules_1 = __importDefault(require("./routes/schedules"));
 exports.fastify = (0, fastify_1.default)({});
 exports.fastify.register(require("@fastify/static"), {
     root: __dirname,
@@ -89,6 +90,9 @@ exports.fastify.register(presets_1.default, {
     prefix: prefix
 });
 exports.fastify.register(user_1.default, {
+    prefix: prefix
+});
+exports.fastify.register(schedules_1.default, {
     prefix: prefix
 });
 exports.fastify.register(cors_1.default);
