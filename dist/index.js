@@ -120,10 +120,10 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                return [4 /*yield*/, exports.fastify.listen({ port: 3435 })];
+                return [4 /*yield*/, exports.fastify.listen({ port: 3434 })];
             case 1:
                 _a.sent();
-                console.log("Listening to traffic on 3435");
+                console.log("Listening to traffic on 3434");
                 return [3 /*break*/, 3];
             case 2:
                 err_1 = _a.sent();

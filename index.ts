@@ -84,8 +84,8 @@ setInterval(() => {
 // Run the server!
 const start = async () => {
     try {
-        await fastify.listen({ port: 3435 });
-        console.log("Listening to traffic on 3435");
+        await fastify.listen({ port: 3434 });
+        console.log("Listening to traffic on 3434");
     } catch (err) {
         console.log(err);
 
