@@ -57,6 +57,7 @@ exports.default = (function (fastify, _, done) {
                     body = request.body;
                     if (!body ||
                         !("startDate" in body) ||
+                        !("allDay" in body) ||
                         !("endDate" in body) ||
                         !("authenticationKey" in body)) {
                         return [2 /*return*/, reply.code(400).send("Missing required field!")];
@@ -69,7 +70,6 @@ exports.default = (function (fastify, _, done) {
                     userID = _a.sent();
                     if (!groupID || !userID)
                         return [2 /*return*/, reply.code(400).send("No user found!")];
-                    console.log(Boolean(body.allDay));
                     startDate = convertToDate(body.startDate, body.startTime, Boolean(body.allDay));
                     endDate = convertToDate(body.endDate, body.endTime, Boolean(body.allDay));
                     if (startDate.getTime < new Date().getTime) {
@@ -85,8 +85,9 @@ exports.default = (function (fastify, _, done) {
                     return [4 /*yield*/, checkForDuplicates(groupID, convertToDate(body.startDate, body.startTime), convertToDate(body.endDate, body.endTime))];
                 case 3:
                     isUnique = _a.sent();
-                    if (isUnique) {
-                        (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID]);
+                    console.log(isUnique.length, isUnique);
+                    if (isUnique.length === 0) {
+                        // dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
                         reply.code(200);
                     }
                     else
@@ -139,21 +140,24 @@ var checkForDuplicates = function (groupID, startDate, endDate) { return __await
     var dates, i, dateRow;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, (0, hooks_1.dbQuery)('SELECT startDate, endDate FROM schedules WHERE groupID=?', [groupID])];
+            case 0: return [4 /*yield*/, (0, hooks_1.dbQuery)('SELECT startDate, endDate, userID FROM schedules WHERE groupID=?', [groupID])];
             case 1:
                 dates = _a.sent();
                 for (i = 0; i < dates.length; i++) {
                     dateRow = dates[i];
+                    console.log(startDate.toLocaleDateString(), dateRow.startDate.toLocaleDateString(), endDate.toLocaleDateString(), dateRow.endDate.toLocaleDateString());
                     // Check if start time is after everyones end time
                     if (startDate.getTime() >= dateRow.startDate.getTime() && endDate.getTime() <= dateRow.endDate.getTime())
-                        return [2 /*return*/, false
+                        return [2 /*return*/, dateRow.userID
                             // Check if end date isnt in the middle of another schedule
                         ];
                     // Check if end date isnt in the middle of another schedule
                     if (endDate.getTime() === dateRow.endDate.getTime() || startDate.getTime() === dateRow.startDate.getTime())
-                        return [2 /*return*/, false];
+                        return [2 /*return*/, dateRow.userID];
+                    if (dateRow.startDate.getTime() >= startDate.getTime() && endDate.getTime() <= dateRow.endDate.getTime())
+                        return [2 /*return*/, dateRow.userID];
                 }
-                return [2 /*return*/, true
+                return [2 /*return*/, ""
                     // check if start is after end time
                 ];
         }

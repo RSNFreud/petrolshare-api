@@ -13,6 +13,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         if (
             !body ||
             !("startDate" in body) ||
+            !("allDay" in body) ||
             !("endDate" in body) ||
             !("authenticationKey" in body)
         ) {
@@ -22,8 +23,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         let groupID = await retrieveGroupID(body["authenticationKey"]);
         let userID = await retrieveID(body["authenticationKey"]);
         if (!groupID || !userID) return reply.code(400).send("No user found!");
-
-        console.log(Boolean(body.allDay));
 
         const startDate = convertToDate(body.startDate, body.startTime, Boolean(body.allDay))
         const endDate = convertToDate(body.endDate, body.endTime, Boolean(body.allDay))
@@ -42,9 +41,12 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         if (body.repeating !== "notRepeating") return
         const isUnique = await checkForDuplicates(groupID, convertToDate(body.startDate, body.startTime), convertToDate(body.endDate, body.endTime))
 
-        if (isUnique) {
+        console.log(isUnique.length, isUnique);
 
-            dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
+
+        if (isUnique.length === 0) {
+
+            // dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
             reply.code(200);
         } else reply.code(400).send("There is a schedule in the date range selected already!")
 
@@ -78,19 +80,21 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 }
 
 const checkForDuplicates = async (groupID: string, startDate: Date, endDate: Date) => {
-    const dates = await dbQuery('SELECT startDate, endDate FROM schedules WHERE groupID=?', [groupID])
+    const dates = await dbQuery('SELECT startDate, endDate, userID FROM schedules WHERE groupID=?', [groupID])
 
     for (let i = 0; i < dates.length; i++) {
-        const dateRow: { startDate: Date, endDate: Date } = dates[i];
+        const dateRow: { startDate: Date, endDate: Date, userID: string } = dates[i];
+        console.log(startDate.toLocaleDateString(), dateRow.startDate.toLocaleDateString(), endDate.toLocaleDateString(), dateRow.endDate.toLocaleDateString());
         // Check if start time is after everyones end time
-        if (startDate.getTime() >= dateRow.startDate.getTime() && endDate.getTime() <= dateRow.endDate.getTime()) return false
+        if (startDate.getTime() >= dateRow.startDate.getTime() && endDate.getTime() <= dateRow.endDate.getTime()) return dateRow.userID
 
         // Check if end date isnt in the middle of another schedule
-        if (endDate.getTime() === dateRow.endDate.getTime() || startDate.getTime() === dateRow.startDate.getTime()) return false
+        if (endDate.getTime() === dateRow.endDate.getTime() || startDate.getTime() === dateRow.startDate.getTime()) return dateRow.userID
 
+        if (dateRow.startDate.getTime() >= startDate.getTime() && endDate.getTime() <= dateRow.endDate.getTime()) return dateRow.userID
     }
 
-    return true
+    return ""
     // check if start is after end time
 }
 
