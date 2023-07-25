@@ -2,7 +2,7 @@ import Fastify, { FastifyInstance } from "fastify";
 import mysql from "mysql";
 require("dotenv").config();
 import cors from "@fastify/cors";
-import { deleteEmptyGroups, sendNotification } from "./hooks";
+import { deleteEmptyGroups } from "./hooks";
 import invoices from "./routes/invoices";
 import distance from "./routes/distance";
 import email from "./routes/email";
@@ -26,7 +26,7 @@ fastify.register(require("@fastify/view"), {
     },
 });
 
-const prefix = 'beta'
+const prefix = ''
 
 fastify.register(distance, {
     prefix: prefix
@@ -73,23 +73,11 @@ setInterval(() => {
     deleteEmptyGroups();
 }, 86400000);
 
-// // EMAIL
-// fastify.get<{ Querystring: { code: string } }>(
-//     "/test",
-//     async (request, reply) => {
-//         sendNotification(
-//             [{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }],
-//             "Testing...",
-//             { route: "Invoices", invoiceID: 440 }
-//         );
-//     }
-// );
-
 // Run the server!
 const start = async () => {
     try {
-        await fastify.listen({ port: 3435 });
-        console.log("Listening to traffic on 3435");
+        await fastify.listen({ port: 3434 });
+        console.log("Listening to traffic on 3434");
     } catch (err) {
         console.log(err);
 

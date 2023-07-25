@@ -64,7 +64,7 @@ exports.fastify.register(require("@fastify/view"), {
         ejs: require("ejs"),
     },
 });
-var prefix = 'beta';
+var prefix = '';
 exports.fastify.register(distance_1.default, {
     prefix: prefix
 });
@@ -106,17 +106,6 @@ exports.conn.connect();
 setInterval(function () {
     (0, hooks_1.deleteEmptyGroups)();
 }, 86400000);
-// // EMAIL
-// fastify.get<{ Querystring: { code: string } }>(
-//     "/test",
-//     async (request, reply) => {
-//         sendNotification(
-//             [{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }],
-//             "Testing...",
-//             { route: "Invoices", invoiceID: 440 }
-//         );
-//     }
-// );
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
     var err_1;
@@ -124,10 +113,10 @@ var start = function () { return __awaiter(void 0, void 0, void 0, function () {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                return [4 /*yield*/, exports.fastify.listen({ port: 3435 })];
+                return [4 /*yield*/, exports.fastify.listen({ port: 3434 })];
             case 1:
                 _a.sent();
-                console.log("Listening to traffic on 3435");
+                console.log("Listening to traffic on 3434");
                 return [3 /*break*/, 3];
             case 2:
                 err_1 = _a.sent();
