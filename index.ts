@@ -2,7 +2,7 @@ import Fastify, { FastifyInstance } from "fastify";
 import mysql from "mysql";
 require("dotenv").config();
 import cors from "@fastify/cors";
-import { deleteEmptyGroups, sendNotification } from "./hooks";
+import { deleteEmptyGroups } from "./hooks";
 import invoices from "./routes/invoices";
 import distance from "./routes/distance";
 import email from "./routes/email";
@@ -12,6 +12,7 @@ import notify from "./routes/notify";
 import petrol from "./routes/petrol";
 import presets from "./routes/presets";
 import user from "./routes/user";
+import schedules from "./routes/schedules";
 
 export const fastify: FastifyInstance = Fastify({});
 
@@ -54,6 +55,9 @@ fastify.register(presets, {
 fastify.register(user, {
     prefix: prefix
 })
+fastify.register(schedules, {
+    prefix: prefix
+})
 
 fastify.register(cors);
 
@@ -68,18 +72,6 @@ conn.connect();
 setInterval(() => {
     deleteEmptyGroups();
 }, 86400000);
-
-// // EMAIL
-// fastify.get<{ Querystring: { code: string } }>(
-//     "/test",
-//     async (request, reply) => {
-//         sendNotification(
-//             [{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }],
-//             "Testing...",
-//             { route: "Invoices", invoiceID: 440 }
-//         );
-//     }
-// );
 
 // Run the server!
 const start = async () => {

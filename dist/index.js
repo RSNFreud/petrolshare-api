@@ -54,6 +54,7 @@ var notify_1 = __importDefault(require("./routes/notify"));
 var petrol_1 = __importDefault(require("./routes/petrol"));
 var presets_1 = __importDefault(require("./routes/presets"));
 var user_1 = __importDefault(require("./routes/user"));
+var schedules_1 = __importDefault(require("./routes/schedules"));
 exports.fastify = (0, fastify_1.default)({});
 exports.fastify.register(require("@fastify/static"), {
     root: __dirname,
@@ -91,6 +92,9 @@ exports.fastify.register(presets_1.default, {
 exports.fastify.register(user_1.default, {
     prefix: prefix
 });
+exports.fastify.register(schedules_1.default, {
+    prefix: prefix
+});
 exports.fastify.register(cors_1.default);
 exports.conn = mysql_1.default.createConnection({
     host: process.env.DB_HOST,
@@ -102,17 +106,6 @@ exports.conn.connect();
 setInterval(function () {
     (0, hooks_1.deleteEmptyGroups)();
 }, 86400000);
-// // EMAIL
-// fastify.get<{ Querystring: { code: string } }>(
-//     "/test",
-//     async (request, reply) => {
-//         sendNotification(
-//             [{ notificationKey: "ExponentPushToken[kAgk8YHT1CczurXj67C80_]" }],
-//             "Testing...",
-//             { route: "Invoices", invoiceID: 440 }
-//         );
-//     }
-// );
 // Run the server!
 var start = function () { return __awaiter(void 0, void 0, void 0, function () {
     var err_1;
