@@ -70,9 +70,9 @@ exports.default = (function (fastify, _, done) {
                     userID = _a.sent();
                     if (!groupID || !userID)
                         return [2 /*return*/, reply.code(400).send("No user found!")];
-                    startDate = convertToDate(body.startDate, body.startTime, Boolean(body.allDay));
-                    endDate = convertToDate(body.endDate, body.endTime, Boolean(body.allDay));
-                    if (startDate.getTime < new Date().getTime) {
+                    startDate = convertToDate(body.startDate, Boolean(body.allDay));
+                    endDate = convertToDate(body.endDate, Boolean(body.allDay));
+                    if (startDate.getTime() < new Date().getTime()) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid date time combination!")];
                     }
                     tempStart = new Date(startDate);
@@ -82,7 +82,7 @@ exports.default = (function (fastify, _, done) {
                     }
                     if (body.repeating !== "notRepeating")
                         return [2 /*return*/, reply.code(400).send("This feature has not been implemented yet!")];
-                    return [4 /*yield*/, checkForDuplicates(groupID, convertToDate(body.startDate, body.startTime), convertToDate(body.endDate, body.endTime))];
+                    return [4 /*yield*/, checkForDuplicates(groupID, convertToDate(body.startDate), convertToDate(body.endDate))];
                 case 3:
                     isUnique = _a.sent();
                     if (isUnique.length === 0) {
@@ -155,11 +155,10 @@ var checkForDuplicates = function (groupID, startDate, endDate) { return __await
         }
     });
 }); };
-var convertToDate = function (date, time, allDay) {
+var convertToDate = function (date, allDay) {
     var dateObj = new Date(date);
     dateObj = new Date(dateObj.setUTCHours(0, 0, 0, 0));
-    if (allDay || !time)
+    if (allDay)
         return dateObj;
-    var timeObj = new Date(time);
-    return new Date("".concat(dateObj.getFullYear(), "-").concat(dateObj.getMonth() + 1, "-").concat(dateObj.getDate(), " ").concat(timeObj.getHours(), ":").concat(timeObj.getMinutes(), ":00"));
+    return new Date(date);
 };

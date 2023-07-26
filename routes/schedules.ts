@@ -5,7 +5,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     fastify.post<{
         Body: {
-            authenticationKey: string; allDay: string, startDate: string, startTime?: string, endDate: string, endTime?: string, summary: string, repeating: string, custom: { number: string, repeatingFormat: string, repeatingDays: string[], ends: { option: string, endDate: string } }
+            authenticationKey: string; allDay: string, startDate: string, endDate: string, summary: string, repeating: string, custom: { number: string, repeatingFormat: string, repeatingDays: string[], ends: { option: string, endDate: string } }
         }
     }>("/api/schedules/add", async (request, reply) => {
         const { body } = request;
@@ -24,10 +24,10 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         let userID = await retrieveID(body["authenticationKey"]);
         if (!groupID || !userID) return reply.code(400).send("No user found!");
 
-        const startDate = convertToDate(body.startDate, body.startTime, Boolean(body.allDay))
-        const endDate = convertToDate(body.endDate, body.endTime, Boolean(body.allDay))
+        const startDate = convertToDate(body.startDate, Boolean(body.allDay))
+        const endDate = convertToDate(body.endDate, Boolean(body.allDay))
 
-        if (startDate.getTime < new Date().getTime) {
+        if (startDate.getTime() < new Date().getTime()) {
             return reply.code(400).send("Please choose a valid date time combination!")
         }
 
@@ -39,7 +39,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
             return reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")
         }
         if (body.repeating !== "notRepeating") return reply.code(400).send("This feature has not been implemented yet!")
-        const isUnique = await checkForDuplicates(groupID, convertToDate(body.startDate, body.startTime), convertToDate(body.endDate, body.endTime))
+        const isUnique = await checkForDuplicates(groupID, convertToDate(body.startDate), convertToDate(body.endDate))
 
         if (isUnique.length === 0) {
             dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
@@ -91,14 +91,12 @@ const checkForDuplicates = async (groupID: string, startDate: Date, endDate: Dat
     // check if start is after end time
 }
 
-const convertToDate = (date: string, time?: string, allDay?: boolean) => {
+const convertToDate = (date: string, allDay?: boolean) => {
     let dateObj = new Date(date)
     dateObj = new Date(dateObj.setUTCHours(0, 0, 0, 0))
 
-    if (allDay || !time) return dateObj
-    const timeObj = new Date(time)
-
-    return new Date(`${dateObj.getFullYear()}-${dateObj.getMonth() + 1}-${dateObj.getDate()} ${timeObj.getHours()}:${timeObj.getMinutes()}:00`);
+    if (allDay) return dateObj
+    return new Date(date)
 
 }
 
