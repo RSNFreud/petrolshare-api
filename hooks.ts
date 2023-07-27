@@ -145,7 +145,7 @@ export const retrieveSessionID = async (groupID: string) => {
     if (!res.length) {
         res = await dbInsert(
             "INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)",
-            [Date.now().toString(), groupID, "true"]
+            [Date.now().toString(), groupID, "1"]
         );
         return res.insertId;
     }

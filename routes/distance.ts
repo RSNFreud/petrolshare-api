@@ -40,7 +40,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
             const groupID = await retrieveGroupID(body["authenticationKey"]);
             await dbQuery(
-                "UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?",
+                "UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=?",
                 [Date.now(), groupID]
             );
             retrieveSessionID(groupID);

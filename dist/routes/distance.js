@@ -83,7 +83,7 @@ exports.default = (function (fastify, _, done) {
                     return [4 /*yield*/, (0, hooks_1.retrieveGroupID)(body["authenticationKey"])];
                 case 1:
                     groupID = _a.sent();
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE sessions SET sessionActive=false, sessionEnd=? WHERE groupID=?", [Date.now(), groupID])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE sessions SET sessionActive=0, sessionEnd=? WHERE groupID=?", [Date.now(), groupID])];
                 case 2:
                     _a.sent();
                     (0, hooks_1.retrieveSessionID)(groupID);

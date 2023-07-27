@@ -220,7 +220,7 @@ var retrieveSessionID = function (groupID) { return __awaiter(void 0, void 0, vo
             case 1:
                 res = _a.sent();
                 if (!!res.length) return [3 /*break*/, 3];
-                return [4 /*yield*/, dbInsert("INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)", [Date.now().toString(), groupID, "true"])];
+                return [4 /*yield*/, dbInsert("INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)", [Date.now().toString(), groupID, "1"])];
             case 2:
                 res = _a.sent();
                 return [2 /*return*/, res.insertId];

@@ -71,7 +71,7 @@ exports.default = (function (fastify, _, done) {
                     if (!groupID || !userID)
                         return [2 /*return*/, reply.code(400).send("No user found!")];
                     startDate = convertToDate(body.startDate, Boolean(body.allDay));
-                    endDate = convertToDate(body.endDate, Boolean(body.allDay));
+                    endDate = convertToDate(body.endDate, Boolean(body.allDay), true);
                     if (startDate.getTime() < new Date().getTime()) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid date time combination!")];
                     }
@@ -155,9 +155,13 @@ var checkForDuplicates = function (groupID, startDate, endDate) { return __await
         }
     });
 }); };
-var convertToDate = function (date, allDay) {
+var convertToDate = function (date, allDay, end) {
     var dateObj = new Date(date);
     dateObj = new Date(dateObj.setUTCHours(0, 0, 0, 0));
+    if (allDay && end) {
+        dateObj = new Date(dateObj.setDate(dateObj.getDate() + 1));
+        return dateObj;
+    }
     if (allDay)
         return dateObj;
     return new Date(date);

@@ -25,7 +25,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         if (!groupID || !userID) return reply.code(400).send("No user found!");
 
         const startDate = convertToDate(body.startDate, Boolean(body.allDay))
-        const endDate = convertToDate(body.endDate, Boolean(body.allDay))
+        const endDate = convertToDate(body.endDate, Boolean(body.allDay), true)
 
         if (startDate.getTime() < new Date().getTime()) {
             return reply.code(400).send("Please choose a valid date time combination!")
@@ -33,7 +33,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
         const tempStart = new Date(startDate)
         const endTimeInterval = new Date(tempStart.setMinutes(tempStart.getMinutes() + 29))
-
 
         if (!body.allDay && (endDate.getTime() <= endTimeInterval.getTime())) {
             return reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")
@@ -91,10 +90,14 @@ const checkForDuplicates = async (groupID: string, startDate: Date, endDate: Dat
     // check if start is after end time
 }
 
-const convertToDate = (date: string, allDay?: boolean) => {
+const convertToDate = (date: string, allDay?: boolean, end?: boolean) => {
     let dateObj = new Date(date)
     dateObj = new Date(dateObj.setUTCHours(0, 0, 0, 0))
 
+    if (allDay && end) {
+        dateObj = new Date(dateObj.setDate(dateObj.getDate() + 1))
+        return dateObj
+    }
     if (allDay) return dateObj
     return new Date(date)
 
