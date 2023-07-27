@@ -157,12 +157,13 @@ var checkForDuplicates = function (groupID, startDate, endDate) { return __await
 }); };
 var convertToDate = function (date, allDay, end) {
     var dateObj = new Date(date);
-    dateObj = new Date(dateObj.setUTCHours(0, 0, 0, 0));
+    dateObj = new Date(dateObj.setUTCHours(0, 1, 0, 0));
+    if (allDay && !end)
+        return dateObj;
     if (allDay && end) {
         dateObj = new Date(dateObj.setDate(dateObj.getDate() + 1));
+        dateObj = new Date(dateObj.setMinutes(-1));
         return dateObj;
     }
-    if (allDay)
-        return dateObj;
     return new Date(date);
 };

@@ -92,14 +92,13 @@ const checkForDuplicates = async (groupID: string, startDate: Date, endDate: Dat
 
 const convertToDate = (date: string, allDay?: boolean, end?: boolean) => {
     let dateObj = new Date(date)
-    dateObj = new Date(dateObj.setUTCHours(0, 0, 0, 0))
+    dateObj = new Date(dateObj.setUTCHours(0, 1, 0, 0))
 
+    if (allDay && !end) return dateObj
     if (allDay && end) {
         dateObj = new Date(dateObj.setDate(dateObj.getDate() + 1))
+        dateObj = new Date(dateObj.setMinutes(-1))
         return dateObj
     }
-    if (allDay) return dateObj
     return new Date(date)
-
 }
-
