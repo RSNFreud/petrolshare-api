@@ -75,6 +75,7 @@ exports.default = (function (fastify, _, done) {
                     if (startDate.getTime() < new Date().getTime()) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid date time combination!")];
                     }
+                    console.log(startDate, endDate);
                     tempStart = new Date(startDate);
                     endTimeInterval = new Date(tempStart.setMinutes(tempStart.getMinutes() + 29));
                     if (!body.allDay && (endDate.getTime() <= endTimeInterval.getTime())) {
@@ -85,6 +86,7 @@ exports.default = (function (fastify, _, done) {
                     return [4 /*yield*/, checkForDuplicates(groupID, convertToDate(body.startDate), convertToDate(body.endDate))];
                 case 3:
                     isUnique = _a.sent();
+                    console.log(44, startDate, endDate);
                     if (isUnique.length === 0) {
                         (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID]);
                         reply.code(200);
@@ -156,14 +158,19 @@ var checkForDuplicates = function (groupID, startDate, endDate) { return __await
     });
 }); };
 var convertToDate = function (date, allDay, end) {
+    console.log(date);
     var dateObj = new Date(date);
-    dateObj = new Date(dateObj.setUTCHours(0, 1, 0, 0));
     if (allDay && !end)
-        return dateObj;
-    if (allDay && end) {
-        dateObj = new Date(dateObj.setDate(dateObj.getDate() + 1));
-        dateObj = new Date(dateObj.setMinutes(-1));
-        return dateObj;
-    }
-    return new Date(date);
+        return toDayLimit(dateObj, 'start');
+    if (allDay && end)
+        return toDayLimit(dateObj, 'end');
+    return dateObj;
+};
+var toDayLimit = function (date, edge) {
+    if (edge === "start")
+        date.setHours(0, 0, 0, 0);
+    if (edge === "end")
+        date.setHours(23, 59, 59, 0);
+    console.log(date);
+    return date;
 };

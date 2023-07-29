@@ -30,6 +30,8 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         if (startDate.getTime() < new Date().getTime()) {
             return reply.code(400).send("Please choose a valid date time combination!")
         }
+        console.log(startDate, endDate);
+
 
         const tempStart = new Date(startDate)
         const endTimeInterval = new Date(tempStart.setMinutes(tempStart.getMinutes() + 29))
@@ -39,6 +41,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         }
         if (body.repeating !== "notRepeating") return reply.code(400).send("This feature has not been implemented yet!")
         const isUnique = await checkForDuplicates(groupID, convertToDate(body.startDate), convertToDate(body.endDate))
+        console.log(44, startDate, endDate);
 
         if (isUnique.length === 0) {
             dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
@@ -91,14 +94,19 @@ const checkForDuplicates = async (groupID: string, startDate: Date, endDate: Dat
 }
 
 const convertToDate = (date: string, allDay?: boolean, end?: boolean) => {
-    let dateObj = new Date(date)
-    dateObj = new Date(dateObj.setUTCHours(0, 1, 0, 0))
+    console.log(date);
 
-    if (allDay && !end) return dateObj
-    if (allDay && end) {
-        dateObj = new Date(dateObj.setDate(dateObj.getDate() + 1))
-        dateObj = new Date(dateObj.setMinutes(-1))
-        return dateObj
-    }
-    return new Date(date)
+    const dateObj = new Date(date);
+    if (allDay && !end) return toDayLimit(dateObj, 'start');
+    if (allDay && end) return toDayLimit(dateObj, 'end');
+
+    return dateObj
+}
+
+const toDayLimit = (date: Date, edge: "start" | "end") => {
+    if (edge === "start") date.setHours(0, 0, 0, 0);
+    if (edge === "end") date.setHours(23, 59, 59, 0);
+    console.log(date);
+
+    return date;
 }
