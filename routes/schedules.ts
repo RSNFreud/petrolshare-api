@@ -32,12 +32,48 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         }
 
         const tempStart = new Date(startDate)
+        const tempEnd = new Date(endDate)
+
         const endTimeInterval = new Date(tempStart.setMinutes(tempStart.getMinutes() + 29))
 
         if (!body.allDay && (endDate.getTime() <= endTimeInterval.getTime())) {
             return reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")
         }
-        if (body.repeating !== "notRepeating") return reply.code(400).send("This feature has not been implemented yet!")
+        if (body.repeating !== "notRepeating") {
+            let interval = 0
+
+            switch (body.repeating) {
+                case 'weekly':
+                    interval = 7
+                    break;
+                case 'monthly':
+                    interval = 31
+                    break;
+                case 'daily':
+                    interval = 1
+                    break;
+                default:
+                    break;
+            }
+
+            for (let i = 0; i < 10; i++) {
+                let start = new Date(tempStart.setDate(startDate.getDate() + interval * i))
+                let end = new Date(tempEnd.setDate(endDate.getDate() + interval * i))
+                if (body.repeating === "monthly") {
+                    start = new Date(tempStart.setMonth(startDate.getMonth() + i))
+                    end = new Date(tempEnd.setMonth(endDate.getMonth() + i))
+                }
+
+                const isUnique = await checkForDuplicates(groupID, start, end)
+                // if (isUnique.length === 0) {
+                //     dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
+                //     reply.code(200);
+                // } else reply.code(400).send("There is a schedule in the date range selected already!")
+
+            }
+
+            return reply.code(400).send("This feature has not been implemented yet!")
+        }
         const isUnique = await checkForDuplicates(groupID, startDate, endDate)
         if (isUnique.length === 0) {
             dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])

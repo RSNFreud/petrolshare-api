@@ -50,7 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var hooks_1 = require("../hooks");
 exports.default = (function (fastify, _, done) {
     fastify.post("/api/schedules/add", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-        var body, groupID, userID, startDate, endDate, tempStart, endTimeInterval, isUnique;
+        var body, groupID, userID, startDate, endDate, tempStart, tempEnd, endTimeInterval, interval, i, start, end, isUnique_1, isUnique;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -76,14 +76,51 @@ exports.default = (function (fastify, _, done) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid date time combination!")];
                     }
                     tempStart = new Date(startDate);
+                    tempEnd = new Date(endDate);
                     endTimeInterval = new Date(tempStart.setMinutes(tempStart.getMinutes() + 29));
                     if (!body.allDay && (endDate.getTime() <= endTimeInterval.getTime())) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")];
                     }
-                    if (body.repeating !== "notRepeating")
-                        return [2 /*return*/, reply.code(400).send("This feature has not been implemented yet!")];
-                    return [4 /*yield*/, checkForDuplicates(groupID, startDate, endDate)];
+                    if (!(body.repeating !== "notRepeating")) return [3 /*break*/, 7];
+                    interval = 0;
+                    switch (body.repeating) {
+                        case 'weekly':
+                            interval = 7;
+                            break;
+                        case 'monthly':
+                            interval = 31;
+                            break;
+                        case 'daily':
+                            interval = 1;
+                            break;
+                        default:
+                            break;
+                    }
+                    i = 0;
+                    _a.label = 3;
                 case 3:
+                    if (!(i < 10)) return [3 /*break*/, 6];
+                    start = new Date(tempStart.setDate(startDate.getDate() + interval * i));
+                    end = new Date(tempEnd.setDate(endDate.getDate() + interval * i));
+                    if (body.repeating === "monthly") {
+                        start = new Date(tempStart.setMonth(startDate.getMonth() + i));
+                        end = new Date(tempEnd.setMonth(endDate.getMonth() + i));
+                    }
+                    return [4 /*yield*/, checkForDuplicates(groupID, start, end)
+                        // if (isUnique.length === 0) {
+                        //     dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
+                        //     reply.code(200);
+                        // } else reply.code(400).send("There is a schedule in the date range selected already!")
+                    ];
+                case 4:
+                    isUnique_1 = _a.sent();
+                    _a.label = 5;
+                case 5:
+                    i++;
+                    return [3 /*break*/, 3];
+                case 6: return [2 /*return*/, reply.code(400).send("This feature has not been implemented yet!")];
+                case 7: return [4 /*yield*/, checkForDuplicates(groupID, startDate, endDate)];
+                case 8:
                     isUnique = _a.sent();
                     if (isUnique.length === 0) {
                         (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID]);
