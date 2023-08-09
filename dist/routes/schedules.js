@@ -50,7 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var hooks_1 = require("../hooks");
 exports.default = (function (fastify, _, done) {
     fastify.post("/api/schedules/add", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-        var body, groupID, userID, startDate, endDate, tempStart, tempEnd, endTimeInterval, interval, i, start, end, isUnique_1, isUnique;
+        var body, groupID, userID, startDate, endDate, tempStart, endTimeInterval, isUnique, linkedID, insertId, interval, limit, count, invalidDates, repeatingFormat, _loop_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -76,58 +76,101 @@ exports.default = (function (fastify, _, done) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid date time combination!")];
                     }
                     tempStart = new Date(startDate);
-                    tempEnd = new Date(endDate);
                     endTimeInterval = new Date(tempStart.setMinutes(tempStart.getMinutes() + 29));
                     if (!body.allDay && (endDate.getTime() <= endTimeInterval.getTime())) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")];
                     }
-                    if (!(body.repeating !== "notRepeating")) return [3 /*break*/, 7];
+                    return [4 /*yield*/, checkForDuplicates(groupID, startDate, endDate)];
+                case 3:
+                    isUnique = _a.sent();
+                    if (!(isUnique.length === 0)) return [3 /*break*/, 5];
+                    return [4 /*yield*/, (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])];
+                case 4:
+                    insertId = (_a.sent()).insertId;
+                    linkedID = insertId;
+                    return [3 /*break*/, 6];
+                case 5: return [2 /*return*/, reply.code(400).send("There is a schedule in the date range selected already!")];
+                case 6:
+                    if (body.repeating === 'notRepeating')
+                        return [2 /*return*/, reply.code(200).send()];
                     interval = 0;
+                    limit = 365;
+                    count = 1;
+                    invalidDates = [];
+                    repeatingFormat = 'day';
                     switch (body.repeating) {
                         case 'weekly':
                             interval = 7;
+                            limit = 52 * 2;
                             break;
                         case 'monthly':
-                            interval = 31;
+                            repeatingFormat = 'monthly';
+                            interval = 1;
+                            limit = 24;
                             break;
                         case 'daily':
+                        case 'custom':
                             interval = 1;
+                            limit = 365;
                             break;
                         default:
                             break;
                     }
-                    i = 0;
-                    _a.label = 3;
-                case 3:
-                    if (!(i < 10)) return [3 /*break*/, 6];
-                    start = new Date(tempStart.setDate(startDate.getDate() + interval * i));
-                    end = new Date(tempEnd.setDate(endDate.getDate() + interval * i));
-                    if (body.repeating === "monthly") {
-                        start = new Date(tempStart.setMonth(startDate.getMonth() + i));
-                        end = new Date(tempEnd.setMonth(endDate.getMonth() + i));
+                    if (body.repeating === "custom" && body.custom.repeatingFormat !== "monthly")
+                        interval = 1;
+                    if (body.repeating === "custom" && body.custom.repeatingFormat === "weekly")
+                        limit = 52 * 2;
+                    if (body.repeating === "custom" && body.custom.repeatingFormat === "monthly") {
+                        limit = 24;
+                        repeatingFormat = 'monthly';
                     }
-                    return [4 /*yield*/, checkForDuplicates(groupID, start, end)
-                        // if (isUnique.length === 0) {
-                        //     dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
-                        //     reply.code(200);
-                        // } else reply.code(400).send("There is a schedule in the date range selected already!")
-                    ];
-                case 4:
-                    isUnique_1 = _a.sent();
-                    _a.label = 5;
-                case 5:
-                    i++;
-                    return [3 /*break*/, 3];
-                case 6: return [2 /*return*/, reply.code(400).send("This feature has not been implemented yet!")];
-                case 7: return [4 /*yield*/, checkForDuplicates(groupID, startDate, endDate)];
+                    if (body.repeating === "custom" && parseInt(body.custom.number) > 1)
+                        interval = interval * parseInt(body.custom.number);
+                    limit--;
+                    _loop_1 = function () {
+                        var tempStart_1, tempEnd, start, end, isUnique_1;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    tempStart_1 = new Date(startDate);
+                                    tempEnd = new Date(endDate);
+                                    start = new Date(tempStart_1.setDate(startDate.getDate() + (interval * count)));
+                                    end = new Date(tempEnd.setDate(endDate.getDate() + (interval * count)));
+                                    if (body.custom.ends.option === "on" && start > new Date(body.custom.ends.endDate)) {
+                                        count = limit;
+                                        return [2 /*return*/, "continue"];
+                                    }
+                                    count++;
+                                    if (body.repeating === "custom" && body.custom.repeatingDays.length && body.custom.repeatingFormat === 'weekly' && !(body.custom.repeatingDays.filter(function (day) { return parseInt(day) === start.getDay(); }).length))
+                                        return [2 /*return*/, "continue"];
+                                    if (repeatingFormat === "monthly") {
+                                        start = new Date(tempStart_1.setMonth(startDate.getMonth() + (interval * count)));
+                                        end = new Date(tempEnd.setMonth(endDate.getMonth() + (interval * count)));
+                                    }
+                                    return [4 /*yield*/, checkForDuplicates(groupID, start, end)];
+                                case 1:
+                                    isUnique_1 = _b.sent();
+                                    if (isUnique_1.length === 0) {
+                                        (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID, linkedSessionID) VALUES (?,?,?,?,?,?,?)", [body.allDay, start, end, body.summary, groupID, userID, linkedID]);
+                                    }
+                                    else
+                                        invalidDates.push(startDate.getTime());
+                                    return [2 /*return*/];
+                            }
+                        });
+                    };
+                    _a.label = 7;
+                case 7:
+                    if (!(count !== limit)) return [3 /*break*/, 9];
+                    return [5 /*yield**/, _loop_1()];
                 case 8:
-                    isUnique = _a.sent();
-                    if (isUnique.length === 0) {
-                        (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID]);
-                        reply.code(200);
-                    }
+                    _a.sent();
+                    return [3 /*break*/, 7];
+                case 9:
+                    if (invalidDates.length === 0)
+                        return [2 /*return*/, reply.code(200).send()];
                     else
-                        reply.code(400).send("There is a schedule in the date range selected already!");
+                        return [2 /*return*/, reply.code(400).send(invalidDates)];
                     return [2 /*return*/];
             }
         });

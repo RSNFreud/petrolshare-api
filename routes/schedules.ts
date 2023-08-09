@@ -32,54 +32,80 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         }
 
         const tempStart = new Date(startDate)
-        const tempEnd = new Date(endDate)
 
         const endTimeInterval = new Date(tempStart.setMinutes(tempStart.getMinutes() + 29))
 
         if (!body.allDay && (endDate.getTime() <= endTimeInterval.getTime())) {
             return reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")
         }
-        if (body.repeating !== "notRepeating") {
-            let interval = 0
 
-            switch (body.repeating) {
-                case 'weekly':
-                    interval = 7
-                    break;
-                case 'monthly':
-                    interval = 31
-                    break;
-                case 'daily':
-                    interval = 1
-                    break;
-                default:
-                    break;
-            }
-
-            for (let i = 0; i < 10; i++) {
-                let start = new Date(tempStart.setDate(startDate.getDate() + interval * i))
-                let end = new Date(tempEnd.setDate(endDate.getDate() + interval * i))
-                if (body.repeating === "monthly") {
-                    start = new Date(tempStart.setMonth(startDate.getMonth() + i))
-                    end = new Date(tempEnd.setMonth(endDate.getMonth() + i))
-                }
-
-                const isUnique = await checkForDuplicates(groupID, start, end)
-                // if (isUnique.length === 0) {
-                //     dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
-                //     reply.code(200);
-                // } else reply.code(400).send("There is a schedule in the date range selected already!")
-
-            }
-
-            return reply.code(400).send("This feature has not been implemented yet!")
-        }
         const isUnique = await checkForDuplicates(groupID, startDate, endDate)
+        let linkedID
         if (isUnique.length === 0) {
-            dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
-            reply.code(200);
-        } else reply.code(400).send("There is a schedule in the date range selected already!")
+            const { insertId } = await dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
+            linkedID = insertId
+        } else return reply.code(400).send("There is a schedule in the date range selected already!")
 
+        if (body.repeating === 'notRepeating') return reply.code(200).send()
+        let interval = 0
+        let limit = 365
+        let count = 1;
+        const invalidDates = []
+        let repeatingFormat = 'day';
+
+        switch (body.repeating) {
+            case 'weekly':
+                interval = 7
+                limit = 52 * 2
+                break;
+            case 'monthly':
+                repeatingFormat = 'monthly'
+                interval = 1
+                limit = 24
+                break;
+            case 'daily':
+            case 'custom':
+                interval = 1
+                limit = 365
+                break;
+            default:
+                break;
+        }
+
+        if (body.repeating === "custom" && body.custom.repeatingFormat !== "monthly") interval = 1
+        if (body.repeating === "custom" && body.custom.repeatingFormat === "weekly") limit = 52 * 2
+        if (body.repeating === "custom" && body.custom.repeatingFormat === "monthly") {
+            limit = 24
+            repeatingFormat = 'monthly'
+        }
+        if (body.repeating === "custom" && parseInt(body.custom.number) > 1) interval = interval * parseInt(body.custom.number)
+        limit--
+        while (count !== limit) {
+            let tempStart = new Date(startDate)
+            let tempEnd = new Date(endDate)
+            let start = new Date(tempStart.setDate(startDate.getDate() + (interval * count)))
+            let end = new Date(tempEnd.setDate(endDate.getDate() + (interval * count)))
+
+            if (body.custom.ends.option === "on" && start > new Date(body.custom.ends.endDate)) {
+                count = limit
+                continue;
+            }
+
+            count++
+            if (body.repeating === "custom" && body.custom.repeatingDays.length && body.custom.repeatingFormat === 'weekly' && !(body.custom.repeatingDays.filter(day => parseInt(day) === start.getDay()).length)) continue
+            if (repeatingFormat === "monthly") {
+                start = new Date(tempStart.setMonth(startDate.getMonth() + (interval * count)))
+                end = new Date(tempEnd.setMonth(endDate.getMonth() + (interval * count)))
+            }
+
+            const isUnique = await checkForDuplicates(groupID, start, end)
+            if (isUnique.length === 0) {
+                dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID, linkedSessionID) VALUES (?,?,?,?,?,?,?)", [body.allDay, start, end, body.summary, groupID, userID, linkedID])
+            } else invalidDates.push(startDate.getTime())
+        }
+
+        if (invalidDates.length === 0) return reply.code(200).send()
+        else return reply.code(400).send(invalidDates)
     });
 
     fastify.get<{
