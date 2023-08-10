@@ -86,7 +86,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
             let start = new Date(tempStart.setDate(startDate.getDate() + (interval * count)))
             let end = new Date(tempEnd.setDate(endDate.getDate() + (interval * count)))
 
-            if (body.repeating === "custom" && start > new Date(body.custom.endDate)) {
+            if (start > new Date(body.custom.endDate)) {
                 count = limit
                 continue;
             }
