@@ -136,7 +136,7 @@ exports.default = (function (fastify, _, done) {
                                     tempEnd = new Date(endDate);
                                     start = new Date(tempStart_1.setDate(startDate.getDate() + (interval * count)));
                                     end = new Date(tempEnd.setDate(endDate.getDate() + (interval * count)));
-                                    if (start > new Date(body.custom.endDate)) {
+                                    if (start > new Date(body.repeatingEndDate)) {
                                         count = limit;
                                         return [2 /*return*/, "continue"];
                                     }

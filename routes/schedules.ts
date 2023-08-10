@@ -5,7 +5,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     fastify.post<{
         Body: {
-            authenticationKey: string; allDay: string, startDate: string, endDate: string, summary: string, repeating: string, custom: { number: string, repeatingFormat: string, repeatingDays: string[], endDate: string }
+            authenticationKey: string; allDay: string, startDate: string, endDate: string, summary: string, repeating: string, custom: { number: string, repeatingFormat: string, repeatingDays: string[] }, repeatingEndDate: string
         }
     }>("/api/schedules/add", async (request, reply) => {
         const { body } = request;
@@ -86,7 +86,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
             let start = new Date(tempStart.setDate(startDate.getDate() + (interval * count)))
             let end = new Date(tempEnd.setDate(endDate.getDate() + (interval * count)))
 
-            if (start > new Date(body.custom.endDate)) {
+            if (start > new Date(body.repeatingEndDate)) {
                 count = limit
                 continue;
             }
