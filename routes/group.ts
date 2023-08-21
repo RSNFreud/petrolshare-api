@@ -100,6 +100,24 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         }
     );
 
+    fastify.post<{ Body: { authenticationKey: string } }>(
+        "/api/group/unsubscribe",
+        async (request, reply) => {
+            const { body } = request;
+
+            if (!("authenticationKey" in body)) {
+                return reply.code(400).send("Missing required field!");
+            }
+
+            const groupID = await retrieveGroupID(body["authenticationKey"]);
+
+            const res = await dbInsert("UPDATE groups SET premium=0 WHERE groupID=?", [
+                groupID,
+            ]);
+            reply.code(200).send(res?.changedRows);
+        }
+    );
+
     fastify.get<{ Querystring: { authenticationKey: string } }>(
         "/api/group/get-members",
         async (request, reply) => {
