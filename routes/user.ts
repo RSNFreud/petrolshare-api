@@ -49,6 +49,42 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         }
     );
 
+    fastify.post<{
+        Body: { emailAddress: string; password: string; fullName: string };
+    }>("/api/user/register", async (request, reply) => {
+        const { body } = request;
+
+        if (
+            !("emailAddress" in body) ||
+            !("password" in body) ||
+            !("fullName" in body)
+        ) {
+            return reply.code(400).send("Missing required field!");
+        }
+
+        const results = await dbQuery("SELECT * from users WHERE emailAddress=?", [
+            body["emailAddress"],
+        ]);
+        if ((results as Array<any>).length)
+            return reply.code(400).send("This user exists already!");
+        const password = argon2.hash(body["password"]);
+
+        const code = await generateCode();
+        const emailCode = await generateEmailCode();
+
+        await dbInsert(
+            "INSERT INTO users( fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?)",
+            [body["fullName"], body["emailAddress"], await password, code, emailCode]
+        );
+        sendMail(
+            body["emailAddress"],
+            "Verify your Mail",
+            `Hey ${body["fullName"]},<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href="https://petrolshare.freud-online.co.uk/email/verify?code=${emailCode}" target="__blank">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>`
+        );
+
+        reply.send(code);
+    });
+
     fastify.post<{ Body: { authenticationKey: string } }>(
         "/api/user/deactivate",
         async (request, reply) => {

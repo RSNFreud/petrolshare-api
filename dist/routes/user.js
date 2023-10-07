@@ -93,6 +93,44 @@ exports.default = (function (fastify, _, done) {
             }
         });
     }); });
+    fastify.post("/api/user/register", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+        var body, results, password, code, emailCode, _a, _b, _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0:
+                    body = request.body;
+                    if (!("emailAddress" in body) ||
+                        !("password" in body) ||
+                        !("fullName" in body)) {
+                        return [2 /*return*/, reply.code(400).send("Missing required field!")];
+                    }
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * from users WHERE emailAddress=?", [
+                            body["emailAddress"],
+                        ])];
+                case 1:
+                    results = _d.sent();
+                    if (results.length)
+                        return [2 /*return*/, reply.code(400).send("This user exists already!")];
+                    password = argon2_1.default.hash(body["password"]);
+                    return [4 /*yield*/, (0, hooks_1.generateCode)()];
+                case 2:
+                    code = _d.sent();
+                    return [4 /*yield*/, (0, hooks_1.generateEmailCode)()];
+                case 3:
+                    emailCode = _d.sent();
+                    _a = hooks_1.dbInsert;
+                    _b = ["INSERT INTO users( fullName, emailAddress, password, authenticationKey, verificationCode) VALUES (?,?,?,?,?)"];
+                    _c = [body["fullName"], body["emailAddress"]];
+                    return [4 /*yield*/, password];
+                case 4: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent(), code, emailCode])]))];
+                case 5:
+                    _d.sent();
+                    (0, hooks_1.sendMail)(body["emailAddress"], "Verify your Mail", "Hey ".concat(body["fullName"], ",<br><br>Thank you for registering for PetrolShare!<br><br>In order to activate your account, please visit <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=").concat(emailCode, "\" target=\"__blank\">this link!</a><br><br>Thanks,<br><br><b>The PetrolShare Team</b>"));
+                    reply.send(code);
+                    return [2 /*return*/];
+            }
+        });
+    }); });
     fastify.post("/api/user/deactivate", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
         var body, emailCode, results, _a, _b;
         return __generator(this, function (_c) {
