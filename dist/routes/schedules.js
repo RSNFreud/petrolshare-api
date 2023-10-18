@@ -72,7 +72,7 @@ exports.default = (function (fastify, _, done) {
                         return [2 /*return*/, reply.code(400).send("No user found!")];
                     startDate = new Date(body.startDate);
                     endDate = new Date(body.endDate);
-                    if (startDate.getTime() < new Date().getTime()) {
+                    if (startDate.getTime() < new Date().getTime() && !body.scheduleID) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid date time combination!")];
                     }
                     tempStart = new Date(startDate);
@@ -80,17 +80,26 @@ exports.default = (function (fastify, _, done) {
                     if (!body.allDay && (endDate.getTime() <= endTimeInterval.getTime())) {
                         return [2 /*return*/, reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")];
                     }
-                    return [4 /*yield*/, checkForDuplicates(groupID, startDate, endDate)];
+                    return [4 /*yield*/, checkForDuplicates(groupID, startDate, endDate, body.scheduleID)];
                 case 3:
                     isUnique = _a.sent();
-                    if (!(isUnique.length === 0)) return [3 /*break*/, 5];
-                    return [4 /*yield*/, (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])];
+                    if (!(isUnique.length === 0)) return [3 /*break*/, 8];
+                    if (!body.scheduleID) return [3 /*break*/, 5];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE schedules SET allDay=?, startDate=?, endDate=?, summary=? WHERE scheduleID=?", [body.allDay, startDate, endDate, body.summary, body.scheduleID])];
                 case 4:
+                    _a.sent();
+                    linkedID = body.scheduleID;
+                    return [3 /*break*/, 7];
+                case 5: return [4 /*yield*/, (0, hooks_1.dbInsert)("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])];
+                case 6:
                     insertId = (_a.sent()).insertId;
                     linkedID = insertId;
-                    return [3 /*break*/, 6];
-                case 5: return [2 /*return*/, reply.code(400).send("There is a schedule in the date range selected already!")];
-                case 6:
+                    _a.label = 7;
+                case 7: return [3 /*break*/, 9];
+                case 8: return [2 /*return*/, reply.code(400).send("There is a schedule in the date range selected already!")];
+                case 9:
+                    if (!body.changeFuture && body.scheduleID)
+                        return [2 /*return*/, reply.code(200).send()];
                     if (body.repeating === 'notRepeating')
                         return [2 /*return*/, reply.code(200).send()];
                     interval = 0;
@@ -159,14 +168,14 @@ exports.default = (function (fastify, _, done) {
                             }
                         });
                     };
-                    _a.label = 7;
-                case 7:
-                    if (!(count !== limit)) return [3 /*break*/, 9];
+                    _a.label = 10;
+                case 10:
+                    if (!(count !== limit)) return [3 /*break*/, 12];
                     return [5 /*yield**/, _loop_1()];
-                case 8:
+                case 11:
                     _a.sent();
-                    return [3 /*break*/, 7];
-                case 9:
+                    return [3 /*break*/, 10];
+                case 12:
                     if (invalidDates.length === 0)
                         return [2 /*return*/, reply.code(200).send()];
                     else
@@ -189,7 +198,7 @@ exports.default = (function (fastify, _, done) {
                     groupID = _a.sent();
                     if (!groupID)
                         return [2 /*return*/, reply.code(400).send("No group found!")];
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)('SELECT startDate, endDate, allDay, summary, userID FROM schedules WHERE groupID=?', [groupID])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)('SELECT startDate, endDate, allDay, summary, userID, scheduleID, linkedSessionID FROM schedules WHERE groupID=?', [groupID])];
                 case 2:
                     data = _a.sent();
                     i = 0;
@@ -214,11 +223,11 @@ exports.default = (function (fastify, _, done) {
     }); });
     done();
 });
-var checkForDuplicates = function (groupID, startDate, endDate) { return __awaiter(void 0, void 0, void 0, function () {
+var checkForDuplicates = function (groupID, startDate, endDate, scheduleID) { return __awaiter(void 0, void 0, void 0, function () {
     var dates, i, dateRow;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, (0, hooks_1.dbQuery)('SELECT startDate, endDate, userID FROM schedules WHERE groupID=?', [groupID])];
+            case 0: return [4 /*yield*/, (0, hooks_1.dbQuery)('SELECT startDate, endDate, userID, scheduleID FROM schedules WHERE groupID=?', [groupID])];
             case 1:
                 dates = _a.sent();
                 for (i = 0; i < dates.length; i++) {
@@ -226,6 +235,8 @@ var checkForDuplicates = function (groupID, startDate, endDate) { return __await
                     if ((startDate.getTime() >= dateRow.startDate.getTime() && startDate.getTime() <= dateRow.endDate.getTime()) ||
                         (endDate.getTime() >= dateRow.startDate.getTime() && endDate.getTime() <= dateRow.endDate.getTime()) ||
                         (startDate.getTime() <= dateRow.startDate.getTime() && endDate.getTime() >= dateRow.endDate.getTime())) {
+                        if (dateRow.scheduleID === scheduleID)
+                            continue;
                         return [2 /*return*/, dateRow.userID];
                     }
                 }

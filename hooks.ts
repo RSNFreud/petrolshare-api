@@ -30,7 +30,7 @@ export const sendMail = async (address: string, subject: string, message: string
     }
 };
 
-export async function dbQuery(query: string, parameters?: string[]) {
+export async function dbQuery(query: string, parameters?: Array<string | Date | undefined>) {
     return new Promise<any[]>((res, rej) => {
         try {
             conn.query(query, parameters, (err, results) => {

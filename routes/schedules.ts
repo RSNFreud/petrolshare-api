@@ -5,7 +5,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     fastify.post<{
         Body: {
-            authenticationKey: string; allDay: string, startDate: string, endDate: string, summary: string, repeating: string, custom: { number: string, repeatingFormat: string, repeatingDays: string[] }, repeatingEndDate: string
+            authenticationKey: string; allDay: string, startDate: string, endDate: string, summary: string, repeating: string, custom: { number: string, repeatingFormat: string, repeatingDays: string[] }, repeatingEndDate: string, scheduleID?: string, changeFuture?: boolean
         }
     }>("/api/schedules/add", async (request, reply) => {
         const { body } = request;
@@ -27,7 +27,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         const startDate = new Date(body.startDate)
         const endDate = new Date(body.endDate)
 
-        if (startDate.getTime() < new Date().getTime()) {
+        if (startDate.getTime() < new Date().getTime() && !body.scheduleID) {
             return reply.code(400).send("Please choose a valid date time combination!")
         }
 
@@ -39,13 +39,18 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
             return reply.code(400).send("Please choose a valid end date combination more then 30 minutes after your start time!")
         }
 
-        const isUnique = await checkForDuplicates(groupID, startDate, endDate)
+        const isUnique = await checkForDuplicates(groupID, startDate, endDate, body.scheduleID)
         let linkedID
         if (isUnique.length === 0) {
-            const { insertId } = await dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
-            linkedID = insertId
+            if (body.scheduleID) {
+                await dbQuery("UPDATE schedules SET allDay=?, startDate=?, endDate=?, summary=? WHERE scheduleID=?", [body.allDay, startDate, endDate, body.summary, body.scheduleID])
+                linkedID = body.scheduleID
+            } else {
+                const { insertId } = await dbInsert("INSERT INTO schedules(allDay, startDate, endDate, summary, groupID, userID) VALUES (?,?,?,?,?,?)", [body.allDay, startDate, endDate, body.summary, groupID, userID])
+                linkedID = insertId
+            }
         } else return reply.code(400).send("There is a schedule in the date range selected already!")
-
+        if (!body.changeFuture && body.scheduleID) return reply.code(200).send()
         if (body.repeating === 'notRepeating') return reply.code(200).send()
         let interval = 0
         let limit = 365
@@ -120,7 +125,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         const groupID = await retrieveGroupID(query["authenticationKey"]);
         if (!groupID) return reply.code(400).send("No group found!");
 
-        const data: { startDate: Date, endDate: Date, allDay: boolean, summary?: string, userID: string }[] = await dbQuery('SELECT startDate, endDate, allDay, summary, userID FROM schedules WHERE groupID=?', [groupID])
+        const data: { startDate: Date, endDate: Date, allDay: boolean, summary?: string, userID: string }[] = await dbQuery('SELECT startDate, endDate, allDay, summary, userID, scheduleID, linkedSessionID FROM schedules WHERE groupID=?', [groupID])
 
         for (let i = 0; i < data.length; i++) {
             let value = data[i];
@@ -133,16 +138,17 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     done()
 }
 
-const checkForDuplicates = async (groupID: string, startDate: Date, endDate: Date) => {
-    const dates = await dbQuery('SELECT startDate, endDate, userID FROM schedules WHERE groupID=?', [groupID])
+const checkForDuplicates = async (groupID: string, startDate: Date, endDate: Date, scheduleID?: string) => {
+    const dates = await dbQuery('SELECT startDate, endDate, userID, scheduleID FROM schedules WHERE groupID=?', [groupID])
 
     for (let i = 0; i < dates.length; i++) {
-        const dateRow: { startDate: Date, endDate: Date, userID: string } = dates[i];
+        const dateRow: { startDate: Date, endDate: Date, userID: string, scheduleID: string } = dates[i];
         if (
             (startDate.getTime() >= dateRow.startDate.getTime() && startDate.getTime() <= dateRow.endDate.getTime()) ||
             (endDate.getTime() >= dateRow.startDate.getTime() && endDate.getTime() <= dateRow.endDate.getTime()) ||
             (startDate.getTime() <= dateRow.startDate.getTime() && endDate.getTime() >= dateRow.endDate.getTime())
         ) {
+            if (dateRow.scheduleID === scheduleID) continue
             return dateRow.userID;
         }
     }
