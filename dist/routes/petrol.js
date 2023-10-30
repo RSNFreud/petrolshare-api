@@ -52,7 +52,7 @@ exports.default = (function (fastify, _, done) {
                         return [2 /*return*/, reply.code(400).send("Missing required field!")];
                     }
                     _a = hooks_1.dbQuery;
-                    _b = ["SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1"];
+                    _b = ["SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1 AND l.approved=1"];
                     return [4 /*yield*/, (0, hooks_1.retrieveGroupID)(body["authenticationKey"])];
                 case 1: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_m.sent()]]))];
                 case 2:
