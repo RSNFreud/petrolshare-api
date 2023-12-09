@@ -116,7 +116,7 @@ exports.default = (function (fastify, _, done) {
                 case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent(), query["code"]]]))];
                 case 3:
                     _c.sent();
-                    return [4 /*yield*/, reply.view("reset-password.ejs", { password: password, root: './pages' })];
+                    return [4 /*yield*/, reply.view("/pages/reset-password.ejs", { password: password, root: './pages' })];
                 case 4:
                     _c.sent();
                     return [2 /*return*/];

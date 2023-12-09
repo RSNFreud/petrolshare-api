@@ -78,7 +78,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 [await argon2.hash(password), query["code"]]
             );
 
-            await reply.view("reset-password.ejs", { password: password, root: './pages' });
+            await reply.view("/pages/reset-password.ejs", { password: password, root: './pages' });
         }
     );
 
