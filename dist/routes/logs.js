@@ -76,7 +76,7 @@ exports.default = (function (fastify, _, done) {
                     if (!sessions)
                         return [2 /*return*/, reply.code(400).send("There are no sessions to be found")];
                     _c = hooks_1.dbQuery;
-                    _d = ["SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? AND l.approved=1 ORDER BY l.date DESC"];
+                    _d = ["SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, l.approved, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? ORDER BY l.date DESC"];
                     return [4 /*yield*/, (0, hooks_1.retrieveGroupID)(query["authenticationKey"])];
                 case 3: return [4 /*yield*/, _c.apply(void 0, _d.concat([[_e.sent()]]))];
                 case 4:
@@ -102,6 +102,7 @@ exports.default = (function (fastify, _, done) {
                                     distance: e.distance,
                                     date: e.date,
                                     logID: e.logID,
+                                    pending: !e.approved
                                 },
                             ], false) });
                     });

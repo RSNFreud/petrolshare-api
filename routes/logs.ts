@@ -19,7 +19,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 return reply.code(400).send("There are no sessions to be found");
 
             let logs = await dbQuery(
-                "SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? AND l.approved=1 ORDER BY l.date DESC",
+                "SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, l.approved, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? ORDER BY l.date DESC",
                 [await retrieveGroupID(query["authenticationKey"])]
             );
 
@@ -56,6 +56,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                             distance: e.distance,
                             date: e.date,
                             logID: e.logID,
+                            pending: !e.approved
                         },
                     ],
                 };
