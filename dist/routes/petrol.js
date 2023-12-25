@@ -72,7 +72,7 @@ exports.default = (function (fastify, _, done) {
                     }
                     totalDistance = Object.values(distances).reduce(function (a, b) { return a + b["distance"]; }, 0);
                     pricePerLiter = body["totalPrice"] / body["litersFilled"];
-                    totalCarDistance = body["odometer"] - results[0]["initialOdometer"];
+                    totalCarDistance = results[0]["initialOdometer"] ? body["odometer"] - results[0]["initialOdometer"] : totalDistance;
                     litersPerKm = body["litersFilled"] /
                         (results[0]["initialOdometer"] && totalCarDistance > 0
                             ? totalCarDistance

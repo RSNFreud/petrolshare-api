@@ -22,7 +22,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
             return reply.code(400).send("Missing required field!");
         }
 
-        // const results = await dbQuery('SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionID=63', [await retrieveGroupID(body['authenticationKey'])])
         const results = await dbQuery(
             "SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1 AND l.approved=1",
             [await retrieveGroupID(body["authenticationKey"])]
@@ -65,7 +64,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         );
 
         const pricePerLiter = body["totalPrice"] / body["litersFilled"];
-        const totalCarDistance = body["odometer"] - results[0]["initialOdometer"];
+        const totalCarDistance = results[0]["initialOdometer"] ? body["odometer"] - results[0]["initialOdometer"] : totalDistance;
 
         const litersPerKm =
             body["litersFilled"] /
