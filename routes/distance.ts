@@ -2,33 +2,6 @@ import { FastifyInstance } from "fastify";
 import { retrieveGroupID, dbQuery, dbInsert, retrieveID, retrieveSessionID, sendNotification, retrieveName } from "../hooks";
 
 export default (fastify: FastifyInstance, _: any, done: () => void) => {
-    fastify.get<{ Querystring: { authenticationKey: string } }>(
-        "/api/distance/get",
-        async (request, reply) => {
-            const { query } = request;
-
-            if (!("authenticationKey" in query)) {
-                return reply.code(400).send("Missing required field!");
-            }
-
-            const userID = await retrieveID(query["authenticationKey"]);
-            if (!userID) return reply.code(400).send("No user found!");
-
-            const results = await dbQuery(
-                "SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1",
-                [userID, await retrieveGroupID(query["authenticationKey"])]
-            );
-
-            if (!results.length) return reply.send(0);
-
-            let total = 0;
-            results.map(({ distance }) => {
-                total += distance;
-            });
-            reply.send(Math.round(total * 100) / 100);
-        }
-    );
-
     fastify.post<{ Body: { authenticationKey: string } }>(
         "/api/distance/reset",
         async (request, reply) => {

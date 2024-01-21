@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,7 +54,7 @@ var argon2_1 = __importDefault(require("argon2"));
 var hooks_1 = require("../hooks");
 exports.default = (function (fastify, _, done) {
     fastify.post("/api/user/login", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-        var body, results, code, _a;
+        var body, results, code, _a, groupData;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -64,7 +75,7 @@ exports.default = (function (fastify, _, done) {
                                 .send("Your account has been deactivated! Please check your email to reactivate")];
                     return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
                 case 2:
-                    if (!_b.sent()) return [3 /*break*/, 7];
+                    if (!_b.sent()) return [3 /*break*/, 8];
                     _a = results[0].authenticationKey;
                     if (_a) return [3 /*break*/, 4];
                     return [4 /*yield*/, (0, hooks_1.generateCode)()];
@@ -73,23 +84,27 @@ exports.default = (function (fastify, _, done) {
                     _b.label = 4;
                 case 4:
                     code = _a;
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT premium FROM groups WHERE groupID=?", [results[0].groupID])];
+                case 5:
+                    groupData = (_b.sent())[0];
                     reply.code(200).send({
                         fullName: results[0].fullName,
                         groupID: results[0].groupID,
                         emailAddress: results[0].emailAddress,
                         authenticationKey: code,
                         userID: results[0].userID,
+                        premium: (groupData === null || groupData === void 0 ? void 0 : groupData.premium) || false
                     });
-                    if (!!results[0].authenticationKey) return [3 /*break*/, 6];
+                    if (!!results[0].authenticationKey) return [3 /*break*/, 7];
                     return [4 /*yield*/, (0, hooks_1.dbInsert)("UPDATE users SET authenticationKey=? WHERE emailAddress=?", [code, body["emailAddress"]]).catch(function (err) { return console.log(err); })];
-                case 5:
+                case 6:
                     _b.sent();
-                    _b.label = 6;
-                case 6: return [3 /*break*/, 8];
-                case 7:
+                    _b.label = 7;
+                case 7: return [3 /*break*/, 9];
+                case 8:
                     reply.code(400).send("Incorrect username or password.");
-                    _b.label = 8;
-                case 8: return [2 /*return*/];
+                    _b.label = 9;
+                case 9: return [2 /*return*/];
             }
         });
     }); });
@@ -358,7 +373,7 @@ exports.default = (function (fastify, _, done) {
         });
     }); });
     fastify.get("/api/user/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-        var query, userID, results;
+        var query, userID, results, groupData, distance, total;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -376,7 +391,20 @@ exports.default = (function (fastify, _, done) {
                     results = _a.sent();
                     if (!results.length)
                         return [2 /*return*/, reply.code(400).send("No user found!")];
-                    reply.send(results);
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * FROM groups WHERE groupID=?", [
+                            results[0].groupID,
+                        ])];
+                case 3:
+                    groupData = _a.sent();
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1", [userID, results[0].groupID])];
+                case 4:
+                    distance = _a.sent();
+                    total = 0;
+                    distance.map(function (_a) {
+                        var distance = _a.distance;
+                        total += distance;
+                    });
+                    reply.send(__assign(__assign(__assign({}, results[0]), groupData[0]), { currentMileage: Math.round(total * 100) / 100 }));
                     return [2 /*return*/];
             }
         });

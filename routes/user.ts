@@ -8,7 +8,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         "/api/user/login",
         async (request, reply) => {
             const { body } = request;
-
             if (!("emailAddress" in body) || !("password" in body)) {
                 return reply.code(400).send("Missing required field!");
             }
@@ -29,12 +28,14 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                     );
             if (await argon2.verify(results[0].password, body["password"])) {
                 const code = results[0].authenticationKey || (await generateCode());
+                const [groupData]: { premium: number }[] = await dbQuery("SELECT premium FROM groups WHERE groupID=?", [results[0].groupID])
                 reply.code(200).send({
                     fullName: results[0].fullName,
                     groupID: results[0].groupID,
                     emailAddress: results[0].emailAddress,
                     authenticationKey: code,
                     userID: results[0].userID,
+                    premium: groupData?.premium || false
                 });
 
                 if (!results[0].authenticationKey) {
@@ -322,7 +323,21 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
             if (!results.length) return reply.code(400).send("No user found!");
 
-            reply.send(results);
+            const groupData = await dbQuery("SELECT * FROM groups WHERE groupID=?", [
+                results[0].groupID,
+            ]);
+
+            const distance = await dbQuery(
+                "SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1",
+                [userID, results[0].groupID]
+            );
+
+            let total = 0;
+            distance.map(({ distance }) => {
+                total += distance;
+            });
+
+            reply.send({ ...results[0], ...groupData[0], currentMileage: Math.round(total * 100) / 100 });
         }
     );
 
