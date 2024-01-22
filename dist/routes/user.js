@@ -84,17 +84,10 @@ exports.default = (function (fastify, _, done) {
                     _b.label = 4;
                 case 4:
                     code = _a;
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT premium FROM groups WHERE groupID=?", [results[0].groupID])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * FROM groups WHERE groupID=?", [results[0].groupID])];
                 case 5:
                     groupData = (_b.sent())[0];
-                    reply.code(200).send({
-                        fullName: results[0].fullName,
-                        groupID: results[0].groupID,
-                        emailAddress: results[0].emailAddress,
-                        authenticationKey: code,
-                        userID: results[0].userID,
-                        premium: (groupData === null || groupData === void 0 ? void 0 : groupData.premium) || false
-                    });
+                    reply.code(200).send(__assign({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID }, groupData));
                     if (!!results[0].authenticationKey) return [3 /*break*/, 7];
                     return [4 /*yield*/, (0, hooks_1.dbInsert)("UPDATE users SET authenticationKey=? WHERE emailAddress=?", [code, body["emailAddress"]]).catch(function (err) { return console.log(err); })];
                 case 6:
