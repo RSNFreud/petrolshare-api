@@ -38,6 +38,39 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var hooks_1 = require("../hooks");
 exports.default = (function (fastify, _, done) {
+    fastify.get("/api/distance/get", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
+        var query, userID, results, _a, _b, _c, total;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0:
+                    query = request.query;
+                    if (!("authenticationKey" in query)) {
+                        return [2 /*return*/, reply.code(400).send("Missing required field!")];
+                    }
+                    return [4 /*yield*/, (0, hooks_1.retrieveID)(query["authenticationKey"])];
+                case 1:
+                    userID = _d.sent();
+                    if (!userID)
+                        return [2 /*return*/, reply.code(400).send("No user found!")];
+                    _a = hooks_1.dbQuery;
+                    _b = ["SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1"];
+                    _c = [userID];
+                    return [4 /*yield*/, (0, hooks_1.retrieveGroupID)(query["authenticationKey"])];
+                case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([_c.concat([_d.sent()])]))];
+                case 3:
+                    results = _d.sent();
+                    if (!results.length)
+                        return [2 /*return*/, reply.send(0)];
+                    total = 0;
+                    results.map(function (_a) {
+                        var distance = _a.distance;
+                        total += distance;
+                    });
+                    reply.send(Math.round(total * 100) / 100);
+                    return [2 /*return*/];
+            }
+        });
+    }); });
     fastify.post("/api/distance/reset", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
         var body, groupID;
         return __generator(this, function (_a) {
