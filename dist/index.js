@@ -96,13 +96,12 @@ exports.fastify.register(schedules_1.default, {
     prefix: prefix
 });
 exports.fastify.register(cors_1.default);
-exports.conn = mysql_1.default.createConnection({
+exports.conn = mysql_1.default.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: "petrolshare",
 });
-exports.conn.connect();
 setInterval(function () {
     (0, hooks_1.deleteEmptyGroups)();
 }, 86400000);

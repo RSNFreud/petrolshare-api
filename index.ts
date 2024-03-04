@@ -61,13 +61,12 @@ fastify.register(schedules, {
 
 fastify.register(cors);
 
-export const conn = mysql.createConnection({
+export const conn = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: "petrolshare",
 });
-conn.connect();
 
 setInterval(() => {
     deleteEmptyGroups();
