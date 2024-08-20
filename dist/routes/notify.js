@@ -47,7 +47,6 @@ exports.default = (function (fastify, _, done) {
                     if (!("emailAddress" in body) || !("notificationKey" in body)) {
                         return [2 /*return*/, reply.code(400).send("Missing required field!")];
                     }
-                    console.log(body["notificationKey"]);
                     return [4 /*yield*/, (0, hooks_1.dbInsert)("UPDATE users SET notificationKey=? WHERE emailAddress=?", [
                             body["notificationKey"],
                             body["emailAddress"],

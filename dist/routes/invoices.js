@@ -327,7 +327,7 @@ exports.default = (function (fastify, _, done) {
                     if (!user.length)
                         return [2 /*return*/, reply.code(400).send('There is no user with that name!')];
                     if (user[0].notificationKey) {
-                        (0, hooks_1.sendNotification)([{ notificationKey: user[0].notificationKey }], "You have a payment request waiting and havent dealt with it yet! ".concat(body['fullName'], " has asked for your attention on it!"), { route: "Payments", invoiceID: body["invoiceID"] });
+                        (0, hooks_1.sendNotification)([{ notificationKey: user[0].notificationKey }], "You have a payment request waiting and havent dealt with it yet! ".concat(body['fullName'], " has asked for your attention on it!"), { route: "invoices", invoiceID: body["invoiceID"] });
                     }
                     else {
                         return [2 /*return*/, reply.code(400).send('This user is using the web version of the app and as such we cannot send them notifications!')];

@@ -267,7 +267,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
             return reply.code(400).send('There is no user with that name!')
 
         if (user[0].notificationKey) {
-            sendNotification([{ notificationKey: user[0].notificationKey }], `You have a payment request waiting and havent dealt with it yet! ${body['fullName']} has asked for your attention on it!`, { route: "Payments", invoiceID: body["invoiceID"] })
+            sendNotification([{ notificationKey: user[0].notificationKey }], `You have a payment request waiting and havent dealt with it yet! ${body['fullName']} has asked for your attention on it!`, { route: "invoices", invoiceID: body["invoiceID"] })
         } else {
             return reply.code(400).send('This user is using the web version of the app and as such we cannot send them notifications!')
         }

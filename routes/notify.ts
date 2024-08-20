@@ -11,8 +11,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
                 return reply.code(400).send("Missing required field!");
             }
 
-            console.log(body["notificationKey"]);
-
             await dbInsert("UPDATE users SET notificationKey=? WHERE emailAddress=?", [
                 body["notificationKey"],
                 body["emailAddress"],
