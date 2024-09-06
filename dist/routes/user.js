@@ -65,14 +65,12 @@ exports.default = (function (fastify, _, done) {
                     return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * from users WHERE emailAddress=?", [body["emailAddress"]])];
                 case 1:
                     results = _b.sent();
-                    if (!(results).length)
+                    if (!results.length)
                         return [2 /*return*/, reply.code(400).send("Incorrect username or password.")];
                     if (!results[0]["verified"])
                         return [2 /*return*/, reply.code(400).send("Please verify your account!")];
                     if (!results[0]["active"])
-                        return [2 /*return*/, reply
-                                .code(400)
-                                .send("Your account has been deactivated! Please check your email to reactivate")];
+                        return [2 /*return*/, reply.code(400).send("Your account has been deactivated! Please check your email to reactivate")];
                     return [4 /*yield*/, argon2_1.default.verify(results[0].password, body["password"])];
                 case 2:
                     if (!_b.sent()) return [3 /*break*/, 8];
@@ -84,7 +82,9 @@ exports.default = (function (fastify, _, done) {
                     _b.label = 4;
                 case 4:
                     code = _a;
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * FROM groups WHERE groupID=?", [results[0].groupID])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * FROM groups WHERE groupID=?", [
+                            results[0].groupID,
+                        ])];
                 case 5:
                     groupData = (_b.sent())[0];
                     reply.code(200).send(__assign({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: code, userID: results[0].userID }, groupData));
@@ -107,14 +107,10 @@ exports.default = (function (fastify, _, done) {
             switch (_d.label) {
                 case 0:
                     body = request.body;
-                    if (!("emailAddress" in body) ||
-                        !("password" in body) ||
-                        !("fullName" in body)) {
+                    if (!("emailAddress" in body) || !("password" in body) || !("fullName" in body)) {
                         return [2 /*return*/, reply.code(400).send("Missing required field!")];
                     }
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * from users WHERE emailAddress=?", [
-                            body["emailAddress"],
-                        ])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * from users WHERE emailAddress=?", [body["emailAddress"]])];
                 case 1:
                     results = _d.sent();
                     if (results.length)
@@ -154,12 +150,17 @@ exports.default = (function (fastify, _, done) {
                     _a = hooks_1.dbQuery;
                     _b = ["SELECT emailAddress FROM users WHERE userID=?"];
                     return [4 /*yield*/, (0, hooks_1.retrieveID)(body["authenticationKey"])];
-                case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+                case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[
+                            _c.sent()
+                        ]]))];
                 case 3:
                     results = _c.sent();
                     if (!results.length)
                         return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET active=0, verificationCode=? WHERE authenticationKey=?", [emailCode, body["authenticationKey"]])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET active=0, verificationCode=? WHERE authenticationKey=?", [
+                            emailCode,
+                            body["authenticationKey"],
+                        ])];
                 case 4:
                     _c.sent();
                     (0, hooks_1.sendMail)(results[0]["emailAddress"], "PetrolShare - Account Deactivation", "Hi!<br><br>We have received a request to deactivate your account. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/deactivate?code=".concat(emailCode, "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team"));
@@ -189,9 +190,7 @@ exports.default = (function (fastify, _, done) {
                     _a = hooks_1.dbQuery;
                     _b = ["SELECT premium FROM groups WHERE groupID=?"];
                     return [4 /*yield*/, (0, hooks_1.retrieveGroupID)(body["authenticationKey"])];
-                case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[
-                            _e.sent()
-                        ]]))];
+                case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_e.sent()]]))];
                 case 3:
                     isPremium = (_c = (_e.sent())[0]) === null || _c === void 0 ? void 0 : _c.premium;
                     isNewPremium = (_d = results[0]) === null || _d === void 0 ? void 0 : _d.premium;
@@ -236,12 +235,18 @@ exports.default = (function (fastify, _, done) {
                     _a = hooks_1.dbQuery;
                     _b = ["SELECT emailAddress FROM users WHERE userID=?"];
                     return [4 /*yield*/, (0, hooks_1.retrieveID)(body["authenticationKey"])];
-                case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[_c.sent()]]))];
+                case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([[
+                            _c.sent()
+                        ]]))];
                 case 3:
                     results = _c.sent();
                     if (!results.length)
                         return [2 /*return*/, reply.code(400).send("There is no user with that ID")];
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?", [emailCode, body["newEmail"], body["authenticationKey"]])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET verificationCode=?, tempEmail=? WHERE authenticationKey=?", [
+                            emailCode,
+                            body["newEmail"],
+                            body["authenticationKey"],
+                        ])];
                 case 4:
                     _c.sent();
                     (0, hooks_1.sendMail)(body["newEmail"], "PetrolShare - Change Email Address", "Hi!<br><br>We have received a request to change your email to this address. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/verify?code=".concat(emailCode, "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team"));
@@ -266,10 +271,7 @@ exports.default = (function (fastify, _, done) {
                     results = _a.sent();
                     if (!results.length)
                         return [2 /*return*/, reply.code(400).send("There is no user with that email address")];
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET verificationCode=? WHERE emailAddress=?", [
-                            emailCode,
-                            body["emailAddress"],
-                        ])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET verificationCode=? WHERE emailAddress=?", [emailCode, body["emailAddress"]])];
                 case 3:
                     _a.sent();
                     (0, hooks_1.sendMail)(body["emailAddress"], "PetrolShare - Forgot your Password", "Hi!<br><br>We have received a request to reset your password. Please click <a href=\"https://petrolshare.freud-online.co.uk/email/reset-password?code=".concat(emailCode, "\" target=\"_blank\">here<a/> to confirm this change.<br><br>If this wasn't requested by you, feel free to ignore this and nothing will happen.<br><br>Thanks<br>The PetrolShare Team"));
@@ -328,7 +330,10 @@ exports.default = (function (fastify, _, done) {
                     return [4 /*yield*/, argon2_1.default.hash(body["newPassword"])];
                 case 3:
                     password = _c.sent();
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET password=?, authenticationKey=null WHERE authenticationKey=?", [password, body["authenticationKey"]])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("UPDATE users SET password=?, authenticationKey=null WHERE authenticationKey=?", [
+                            password,
+                            body["authenticationKey"],
+                        ])];
                 case 4:
                     _c.sent();
                     return [2 /*return*/];
@@ -336,31 +341,30 @@ exports.default = (function (fastify, _, done) {
         });
     }); });
     fastify.get("/api/user/verify", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-        var query, results;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var query, results, groupData;
+        var _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     query = request.query;
                     if (!("authenticationKey" in query)) {
                         return [2 /*return*/, reply.code(400).send("Missing required field!")];
                     }
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * from users WHERE authenticationKey=?", [query["authenticationKey"]])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * from users WHERE authenticationKey=?", [
+                            query["authenticationKey"],
+                        ])];
                 case 1:
-                    results = _a.sent();
+                    results = _b.sent();
                     if (!results)
-                        return [2 /*return*/, reply
-                                .code(400)
-                                .send("Your account session has expired! Please re-login")];
-                    if (!results[0]["active"])
-                        return [2 /*return*/, reply
-                                .code(400)
-                                .send("This account has been deactivated. Please check your emails to reactivate!")];
-                    reply.code(200).send({
-                        fullName: results[0].fullName,
-                        groupID: results[0].groupID,
-                        emailAddress: results[0].emailAddress,
-                        userID: results[0].userID,
-                    });
+                        return [2 /*return*/, reply.code(400).send("Your account session has expired! Please re-login")];
+                    if (!((_a = results[0]) === null || _a === void 0 ? void 0 : _a.active))
+                        return [2 /*return*/, reply.code(400).send("This account has been deactivated. Please check your emails to reactivate!")];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * FROM groups WHERE groupID=?", [
+                            results[0].groupID,
+                        ])];
+                case 2:
+                    groupData = (_b.sent())[0];
+                    reply.code(200).send(__assign({ fullName: results[0].fullName, groupID: results[0].groupID, emailAddress: results[0].emailAddress, authenticationKey: query["authenticationKey"], userID: results[0].userID }, groupData));
                     return [2 /*return*/];
             }
         });
@@ -384,9 +388,7 @@ exports.default = (function (fastify, _, done) {
                     results = _a.sent();
                     if (!results.length)
                         return [2 /*return*/, reply.code(400).send("No user found!")];
-                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * FROM groups WHERE groupID=?", [
-                            results[0].groupID,
-                        ])];
+                    return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT * FROM groups WHERE groupID=?", [results[0].groupID])];
                 case 3:
                     groupData = _a.sent();
                     return [4 /*yield*/, (0, hooks_1.dbQuery)("SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1", [userID, results[0].groupID])];
