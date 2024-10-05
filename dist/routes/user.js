@@ -114,7 +114,9 @@ exports.default = (function (fastify, _, done) {
                 case 1:
                     results = _d.sent();
                     if (results.length)
-                        return [2 /*return*/, reply.code(400).send("This user exists already!")];
+                        return [2 /*return*/, reply
+                                .code(400)
+                                .send("A user with this email address already exists. Please click 'Forgot Password' to recover your account.")];
                     password = argon2_1.default.hash(body["password"]);
                     return [4 /*yield*/, (0, hooks_1.generateCode)()];
                 case 2:
