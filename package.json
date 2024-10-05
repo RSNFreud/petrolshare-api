@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/mysql": "^2.15.21",
     "@types/node": "^20.4.1",
-    "@types/nodemailer": "^6.4.8"
+    "@types/nodemailer": "^6.4.8",
+    "typescript": "^5.5.3"
   }
 }
