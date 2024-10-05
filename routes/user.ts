@@ -58,7 +58,10 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     }
 
     const results = await dbQuery("SELECT * from users WHERE emailAddress=?", [body["emailAddress"]]);
-    if ((results as Array<any>).length) return reply.code(400).send("This user exists already!");
+    if ((results as Array<any>).length)
+      return reply
+        .code(400)
+        .send("A user with this email address already exists. Please click 'Forgot Password' to recover your account.");
     const password = argon2.hash(body["password"]);
 
     const code = await generateCode();
