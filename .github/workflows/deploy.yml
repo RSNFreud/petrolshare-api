@@ -49,3 +49,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Deploy to portainer
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: "https://freud-online.co.uk:9443/api/webhooks/07ff6cbe-4a72-49b0-bd63-17d3efe8a0fd"
+          method: "POST"
+          preventFailureOnNoResponse: "true"
