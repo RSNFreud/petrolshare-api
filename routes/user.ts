@@ -254,12 +254,24 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     const [groupData]: { premium: number }[] = await dbQuery("SELECT * FROM groups WHERE groupID=?", [
       results[0].groupID,
     ]);
+
+    const distance = await dbQuery(
+      "SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1",
+      [results[0]?.userID, results[0].groupID]
+    );
+
+    let total = 0;
+    distance.map(({ distance }) => {
+      total += distance;
+    });
+
     reply.code(200).send({
       fullName: results[0].fullName,
       groupID: results[0].groupID,
       emailAddress: results[0].emailAddress,
       authenticationKey: query["authenticationKey"],
       userID: results[0].userID,
+      currentMileage: Math.round(total * 100) / 100,
       ...groupData,
     });
   });
