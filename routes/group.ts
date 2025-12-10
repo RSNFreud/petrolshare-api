@@ -1,143 +1,98 @@
 import { FastifyInstance } from "fastify";
-import { retrieveGroupID, dbQuery, checkIfLast, dbInsert, generateGroupID } from "../hooks";
+import { dbQuery, dbInsert, verifyAuthenticatedUser } from "../hooks";
+import { resetDistance } from "../functions/group/resetDistance";
+import { createGroup } from "../functions/group/createGroup";
 
 export default (fastify: FastifyInstance, _: any, done: () => void) => {
-    fastify.post<{ Body: { authenticationKey: string; groupID: string } }>(
-        "/api/group/create",
-        async (request, reply) => {
-            const { body } = request;
+  // Resets the group distance
+  fastify.post("/api/group/reset", async ({ headers }, reply) => {
+    const user = await verifyAuthenticatedUser(headers, reply);
+    if (!user) return;
 
-            if (!("authenticationKey" in body) || !("groupID" in body)) {
-                return reply.code(400).send("Missing required field!");
-            }
+    await resetDistance({ reply, data: user });
+  });
 
-            const lastInGroup = await checkIfLast(body["authenticationKey"]);
-            const groupIDExists = await dbQuery(
-                "SELECT premium FROM groups WHERE groupID=?",
-                [body["groupID"]]
-            );
-            let groupID = body["groupID"];
-            if (groupIDExists.length) groupID = generateGroupID();
-            const isPremium = groupIDExists.length ? false : groupIDExists[0]?.premium;
+  // Create a new group
+  fastify.post<{ Body: { previousGroupID: string } }>("/api/group/create", async ({ headers, body }, reply) => {
+    const user = await verifyAuthenticatedUser(headers, reply);
+    if (!user) return;
 
-            await dbQuery("UPDATE users SET groupID=? WHERE authenticationKey=?", [
-                groupID,
-                body["authenticationKey"],
-            ]);
-            await dbInsert("INSERT INTO groups (groupID) VALUES (?)", [groupID]);
-            reply.send({
-                groupID: groupID,
-                message:
-                    lastInGroup && !isPremium
-                        ? "You are the last member of this group and as such the group will be deleted within the next 24 hours"
-                        : "",
-            });
-            reply.send(groupID);
-        }
-    );
+    if (!("previousGroupID" in body)) {
+      return reply.code(400).send("Missing required field!");
+    }
 
-    fastify.post<{
-        Body: {
-            authenticationKey: string;
-            distance: string;
-            petrol: string;
-            currency: string;
-        };
-    }>("/api/group/update", async (request, reply) => {
-        const { body } = request;
+    await createGroup({ data: user, reply, previousGroupID: body.previousGroupID });
+  });
 
-        if (
-            !("authenticationKey" in body) ||
-            !("distance" in body) ||
-            !("petrol" in body) ||
-            !("currency" in body)
-        ) {
-            return reply.code(400).send("Missing required field!");
-        }
+  fastify.post<{
+    Body: {
+      authenticationKey: string;
+      distance: string;
+      petrol: string;
+      currency: string;
+    };
+  }>("/api/group/update", async (request, reply) => {
+    const { body } = request;
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
 
-        const groupID = await retrieveGroupID(body["authenticationKey"]);
+    if (!userData || !("distance" in body) || !("petrol" in body) || !("currency" in body)) {
+      return reply.code(400).send("Missing required field!");
+    }
 
-        await dbQuery(
-            "UPDATE groups SET distance=?, petrol=?, currency=? WHERE groupID=?",
-            [body["distance"], body["petrol"], body["currency"], groupID]
-        );
-    });
+    const { groupID } = userData;
+    await dbQuery("UPDATE groups SET distance=?, petrol=?, currency=? WHERE groupID=?", [
+      body["distance"],
+      body["petrol"],
+      body["currency"],
+      groupID,
+    ]);
+  });
 
-    fastify.get<{ Querystring: { authenticationKey: string } }>(
-        "/api/group/get",
-        async (request, reply) => {
-            const { query } = request;
+  fastify.get<{ Querystring: { authenticationKey: string } }>("/api/group/get", async (request, reply) => {
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
 
-            if (!("authenticationKey" in query)) {
-                return reply.code(400).send("Missing required field!");
-            }
+    if (!userData) return;
 
-            const groupID = await retrieveGroupID(query["authenticationKey"]);
+    const { groupID } = userData;
+    const res = await dbQuery("SELECT * FROM groups WHERE groupID=?", [groupID]);
+    if (!res) return;
+    reply.send(res[0]);
+  });
 
-            const res = await dbQuery("SELECT * FROM groups WHERE groupID=?", [
-                groupID,
-            ]);
-            if (!res) return;
-            reply.send(res[0]);
-        }
-    );
+  fastify.post<{ Body: { authenticationKey: string } }>("/api/group/subscribe", async (request, reply) => {
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
 
-    fastify.post<{ Body: { authenticationKey: string } }>(
-        "/api/group/subscribe",
-        async (request, reply) => {
-            const { body } = request;
+    if (!userData) return;
 
-            if (!("authenticationKey" in body)) {
-                return reply.code(400).send("Missing required field!");
-            }
+    const { groupID } = userData;
 
-            const groupID = await retrieveGroupID(body["authenticationKey"]);
+    const res = await dbInsert("UPDATE groups SET premium=1 WHERE groupID=?", [groupID]);
+    reply.code(200).send(res?.changedRows);
+  });
 
-            const res = await dbInsert("UPDATE groups SET premium=1 WHERE groupID=?", [
-                groupID,
-            ]);
-            reply.code(200).send(res?.changedRows);
-        }
-    );
+  fastify.post<{ Body: { authenticationKey: string } }>("/api/group/unsubscribe", async (request, reply) => {
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
 
-    fastify.post<{ Body: { authenticationKey: string } }>(
-        "/api/group/unsubscribe",
-        async (request, reply) => {
-            const { body } = request;
+    if (!userData) return;
 
-            if (!("authenticationKey" in body)) {
-                return reply.code(400).send("Missing required field!");
-            }
+    const { groupID } = userData;
 
-            const groupID = await retrieveGroupID(body["authenticationKey"]);
+    const res = await dbInsert("UPDATE groups SET premium=0 WHERE groupID=?", [groupID]);
+    reply.code(200).send(res?.changedRows);
+  });
 
-            const res = await dbInsert("UPDATE groups SET premium=0 WHERE groupID=?", [
-                groupID,
-            ]);
-            reply.code(200).send(res?.changedRows);
-        }
-    );
+  fastify.get<{ Querystring: { authenticationKey: string } }>("/api/group/get-members", async (request, reply) => {
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
 
-    fastify.get<{ Querystring: { authenticationKey: string } }>(
-        "/api/group/get-members",
-        async (request, reply) => {
-            const { query } = request;
+    if (!userData) return;
 
-            if (!("authenticationKey" in query)) {
-                return reply.code(400).send("Missing required field!");
-            }
+    const { groupID } = userData;
 
-            const groupID = await retrieveGroupID(query["authenticationKey"]);
+    const res = await dbQuery("SELECT fullName, userID FROM users WHERE groupID=?", [groupID]);
+    if (!res) return;
 
-            const res = await dbQuery(
-                "SELECT fullName, userID FROM users WHERE groupID=?",
-                [groupID]
-            );
-            if (!res) return;
+    reply.send(res);
+  });
 
-            reply.send(res);
-        }
-    );
-
-    done()
-}
+  done();
+};
