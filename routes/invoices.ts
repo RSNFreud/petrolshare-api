@@ -1,121 +1,47 @@
 import { FastifyInstance } from "fastify";
 import { dbQuery, generateUniqueURL, dbInsert, sendNotification, verifyAuthenticatedUser, getName } from "../hooks";
+import { getInvoice } from "../functions/invoice/getInvoice";
 
 export default (fastify: FastifyInstance, _: any, done: () => void) => {
-  fastify.get<{ Querystring: { authenticationKey: string; invoiceID: string } }>(
-    "/api/invoices/get",
-    async (request, reply) => {
-      const { query } = request;
-      const userData = await verifyAuthenticatedUser(request.headers, reply);
-
-      if (!query || !userData) {
-        return reply.code(400).send("Missing required field!");
-      }
-      let { groupID } = userData;
-
-      if (!("invoiceID" in query)) {
-        const results: Array<any> = await dbQuery(
-          "SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC",
-          [groupID]
-        );
-        if (!results.length) return reply.code(400).send("There are no invoices in that group!");
-        return reply.send(results);
-      }
-
-      let results = await dbQuery(
-        "SELECT u.fullName, i.invoiceData, i.totalDistance, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice, u.emailAddress FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.invoiceID=?",
-        [query["invoiceID"]]
-      );
-      if (!results.length) return reply.code(400).send("There are no invoices with that ID!");
-
-      for (let i = 0; i < results.length; i++) {
-        const e: {
-          fullName: string;
-          invoiceData: string;
-          totalDistance: string;
-          sessionEnd: string;
-          totalPrice: string;
-        } = results[i];
-        let data: {
-          [key: string]: {
-            distance: number;
-            fullName: string;
-            paymentDue?: number;
-            paid?: boolean;
-          };
-        } = JSON.parse(e.invoiceData);
-
-        for (let i = 0; i < Object.keys(data).length; i++) {
-          let key = Object.keys(data)[i];
-          const name = await dbQuery("SELECT fullName, emailAddress FROM users WHERE userID=?", [key]);
-          if (name) data[key] = { ...data[key], ...name[0] };
-          e.invoiceData = JSON.stringify(data);
-        }
-      }
-
-      let uniqueURL = results[0]?.uniqueURL;
-
-      if (uniqueURL === null) {
-        uniqueURL = await generateUniqueURL();
-        results[0].uniqueURL = uniqueURL;
-      }
-
-      await dbInsert("UPDATE invoices SET invoiceData=?, uniqueURL=? WHERE invoiceID=?", [
-        results[0].invoiceData,
-        uniqueURL,
-        query["invoiceID"],
-      ]);
-      reply.send(results[0]);
-    }
-  );
-  fastify.get<{ Querystring: { uniqueURL: string } }>("/api/invoices/public/get", async (request, reply) => {
+  fastify.get<{ Querystring: { invoiceID: string } }>("/api/invoices/get", async (request, reply) => {
     const { query } = request;
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
 
-    if (!query || !("uniqueURL" in query)) {
+    if (!query || !userData) {
+      return reply.code(400).send("Missing required field!");
+    }
+    let { groupID } = userData;
+
+    const results: Array<any> = await dbQuery(
+      "SELECT i.invoiceID, s.sessionEnd FROM invoices i LEFT JOIN sessions s USING (sessionID) WHERE s.groupID=? ORDER BY s.sessionEnd DESC",
+      [groupID]
+    );
+    if (!results.length) return reply.code(400).send("There are no invoices in that group!");
+    return reply.send(results);
+  });
+
+  fastify.get<{ Params: { invoiceID: string } }>("/api/invoices/get/:invoiceID", async (request, reply) => {
+    const invoiceID = request.params?.invoiceID;
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
+    if (!invoiceID || !userData) {
+      return reply.code(400).send("Missing required field!");
+    }
+    return getInvoice({ invoiceID: invoiceID, reply });
+  });
+
+  fastify.get<{ Params: { uniqueURL: string } }>("/api/invoices/public/get/:uniqueURL", async (request, reply) => {
+    const uniqueURL = request.params?.uniqueURL;
+
+    if (!uniqueURL) {
       return reply.code(400).send("Missing required field!");
     }
 
-    let results = await dbQuery(
-      "SELECT u.fullName, i.invoiceData, i.totalDistance, u.userID, i.uniqueURL, i.pricePerLiter, s.sessionEnd, i.totalPrice FROM invoices i LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u USING (userID) WHERE i.uniqueURL=?",
-      [query["uniqueURL"]]
-    );
-    if (!results.length) return reply.code(400).send("There are no invoices with that ID!");
+    const [invoiceID] = await dbQuery("SELECT invoiceID FROM invoices WHERE uniqueURL=?", [uniqueURL]);
 
-    const groupID = await dbQuery("SELECT groupID FROM users WHERE userID=?", [results[0].userID]);
-    const groupData = groupID
-      ? await dbQuery("SELECT distance, currency, petrol FROM groups WHERE groupID=?", [groupID[0].groupID])
-      : undefined;
-
-    for (let i = 0; i < results.length; i++) {
-      const e: {
-        fullName: string;
-        invoiceData: string;
-        totalDistance: string;
-        sessionEnd: string;
-        totalPrice: string;
-      } = results[i];
-      let data: {
-        [key: string]: {
-          distance: number;
-          fullName: string;
-          paymentDue?: number;
-          paid?: boolean;
-        };
-      } = JSON.parse(e.invoiceData);
-
-      for (let i = 0; i < Object.keys(data).length; i++) {
-        let key = Object.keys(data)[i];
-        const name = await getName(key);
-        if (name) data[key]["fullName"] = name;
-        e.invoiceData = JSON.stringify(data);
-      }
-    }
-
-    await dbInsert("UPDATE invoices SET invoiceData=? WHERE uniqueURL=?", [results[0].invoiceData, query["uniqueURL"]]);
-    delete results[0]?.userID;
-    if (groupData) reply.send({ ...results[0], ...groupData[0] });
-    else reply.send(results[0]);
+    if (!invoiceID) return reply.code(400).send("There are no invoices with that ID!");
+    return getInvoice({ invoiceID: invoiceID.invoiceID, reply });
   });
+
   fastify.post<{
     Body: { authenticationKey: string; invoiceID: string; userID: string };
   }>("/api/invoices/pay", async (request, reply) => {
@@ -147,6 +73,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     reply.send();
   });
+
   fastify.post<{
     Body: {
       authenticationKey: string;
@@ -218,6 +145,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     reply.send();
   });
+
   fastify.post<{ Body: { authenticationKey: string; fullName: string; invoiceID: number } }>(
     "/api/invoices/alert",
     async (request, reply) => {
