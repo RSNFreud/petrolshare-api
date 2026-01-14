@@ -76,7 +76,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
   fastify.post<{
     Body: {
-      authenticationKey: string;
       invoiceID: string;
       userID: string;
       distance: string;
@@ -90,91 +89,85 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     const { groupID } = userData;
 
-    let data: any = await dbQuery(
+    const [data]: {
+      invoiceData: string;
+      totalDistance: number;
+      litersFilled: number;
+      totalPrice: number;
+      initialOdometer: number;
+      sessionID: string;
+    }[] = await dbQuery(
       "SELECT i.invoiceData, i.totalDistance, i.litersFilled, i.totalPrice, s.initialOdometer, s.sessionID FROM invoices i LEFT JOIN sessions s USING(sessionID) WHERE i.invoiceID=? AND s.groupID=?",
       [body["invoiceID"], groupID]
     );
-    if (!data.length) return reply.code(400).send("There are no invoices with that ID!");
 
-    let results = JSON.parse(data[0].invoiceData);
-    if (!results["0"]) return reply.code(400).send("No unindentified distance to assign!");
+    if (!data) return reply.code(400).send("There are no invoices with that ID!");
 
-    let totalDistance = data[0]["totalDistance"];
-    const pricePerLiter = data[0]["totalPrice"] / data[0]["litersFilled"];
-    const litersPerKm = data[0]["litersFilled"] / totalDistance;
+    const results = JSON.parse(data.invoiceData);
+    if (!results[0]) return reply.code(400).send("No unindentified distance to assign!");
 
-    const newDistance = results[body["userID"]]
-      ? parseFloat(body["distance"]) + parseFloat(results[body["userID"]].distance)
-      : parseFloat(body["distance"]);
-    const unidentified: { fullName: string; distance: string } = results["0"];
-    const newUnidentified = parseFloat(unidentified.distance) - parseFloat(body["distance"]);
+    const pricePerLiter = data.totalPrice / data.litersFilled;
+    const litersPerKm = data.litersFilled / data.totalDistance;
 
-    if (results[body["userID"]])
-      results[body["userID"]] = {
-        ...results[body["userID"]],
-        distance: newDistance.toFixed(2),
-        paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2),
-        liters: (newDistance * litersPerKm).toFixed(2),
-      };
-    else {
-      const fullName = await getName(body["userID"]);
-      if (!fullName) return reply.code(400).send("No user found with that ID!");
-      results[body["userID"]] = {
-        fullName: fullName,
-        distance: newDistance.toFixed(2),
-        paid: false,
-        paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2),
-        liters: (newDistance * litersPerKm).toFixed(2),
-      };
-    }
-    if (newUnidentified <= 0) delete results["0"];
+    const currentUserData = results[body["userID"]];
+
+    const newDistance = parseFloat(body["distance"]) + parseFloat(currentUserData?.distance || "0");
+    const unindentifiedDistance = parseFloat(results["0"].distance) - parseFloat(body["distance"]);
+    const fullName = await getName(body["userID"]);
+
+    results[body["userID"]] = {
+      ...currentUserData,
+      fullName: fullName || currentUserData?.fullName,
+      distance: newDistance.toFixed(2),
+      paymentDue: (newDistance * litersPerKm * pricePerLiter).toFixed(2),
+      liters: (newDistance * litersPerKm).toFixed(2),
+    };
+
+    if (unindentifiedDistance <= 0) delete results["0"];
     else
       results["0"] = {
         ...results["0"],
-        distance: newUnidentified.toFixed(2),
-        paymentDue: (newUnidentified * litersPerKm * pricePerLiter).toFixed(2),
+        distance: unindentifiedDistance.toFixed(2),
+        paymentDue: (unindentifiedDistance * litersPerKm * pricePerLiter).toFixed(2),
       };
 
     await dbInsert("INSERT INTO logs(userID, distance, date, sessionID) VALUES(?,?,?,?)", [
       body["userID"],
       body["distance"],
       Date.now(),
-      data[0]["sessionID"],
+      data.sessionID,
     ]);
+
     await dbInsert("UPDATE invoices SET invoiceData=? WHERE invoiceID=?", [JSON.stringify(results), body["invoiceID"]]);
 
     reply.send();
   });
 
-  fastify.post<{ Body: { authenticationKey: string; fullName: string; invoiceID: number } }>(
-    "/api/invoices/alert",
-    async (request, reply) => {
-      const { body } = request;
-      const userData = await verifyAuthenticatedUser(request.headers, reply);
+  fastify.post<{ Body: { userID: string; invoiceID: number } }>("/api/invoices/alert", async (request, reply) => {
+    const { body } = request;
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
 
-      if (!body || !userData || !("fullName" in body) || !("invoiceID" in body)) {
-        return reply.code(400).send("Missing required field!");
-      }
-
-      const user = await dbQuery("SELECT notificationKey FROM users WHERE fullName=?", [body["fullName"]]);
-
-      if (!user.length) return reply.code(400).send("There is no user with that name!");
-
-      if (user[0].notificationKey) {
-        sendNotification(
-          [{ notificationKey: user[0].notificationKey }],
-          `You have a payment request waiting and havent dealt with it yet! ${body["fullName"]} has asked for your attention on it!`,
-          { route: "invoices", invoiceID: body["invoiceID"] }
-        );
-      } else {
-        return reply
-          .code(400)
-          .send("This user is using the web version of the app and as such we cannot send them notifications!");
-      }
-
-      reply.send();
+    if (!body || !userData || !("invoiceID" in body) || !("userID" in body)) {
+      return reply.code(400).send("Missing required field!");
     }
-  );
+
+    const [user] = await dbQuery("SELECT notificationKey FROM users WHERE userID=?", [body["userID"]]);
+
+    if (!user) return reply.code(400).send("There is no user with that name!");
+    if (user.notificationKey) {
+      sendNotification(
+        [{ notificationKey: user.notificationKey }],
+        `You have a payment request waiting and havent dealt with it yet! ${userData.fullName} has asked for your attention on it!`,
+        { route: "invoices", invoiceID: body["invoiceID"] }
+      );
+    } else {
+      return reply
+        .code(400)
+        .send("This user is using the web version of the app and as such we cannot send them notifications!");
+    }
+
+    reply.send();
+  });
 
   done();
 };

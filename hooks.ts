@@ -43,7 +43,7 @@ export async function dbQuery(query: string, parameters?: Array<string | Date | 
   });
 }
 
-export async function dbInsert(query: string, parameters?: Array<string | boolean | undefined>) {
+export async function dbInsert(query: string, parameters?: Array<string | boolean | undefined | number>) {
   return new Promise<OkPacket>((res, rej) => {
     try {
       conn.query(query, parameters, (err, results) => {
@@ -242,7 +242,7 @@ export const sendNotification = async (
 };
 
 export const getName = async (userID: string): Promise<string | null> =>
-  (await dbQuery("SELECT name FROM users WHERE userID=?", [userID]))?.[0];
+  (await dbQuery("SELECT fullName FROM users WHERE userID=?", [userID]))?.[0]?.fullName || null;
 
 export const verifyAuthenticatedUser = async (
   headers: FastifyRequest["headers"],

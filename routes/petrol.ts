@@ -1,6 +1,5 @@
 import { FastifyInstance } from "fastify";
 import { dbQuery, dbInsert, generateUniqueURL, sendNotification, verifyAuthenticatedUser } from "../hooks";
-import user from "./user";
 
 export default (fastify: FastifyInstance, _: any, done: () => void) => {
   fastify.post<{
