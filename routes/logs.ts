@@ -1,65 +1,16 @@
 import { FastifyInstance } from "fastify";
 import { dbQuery, verifyAuthenticatedUser } from "../hooks";
+import { getSortedLogs } from "../functions/logs/getSortedLogs";
 export default (fastify: FastifyInstance, _: any, done: () => void) => {
   fastify.get<{ Querystring: { authenticationKey: string } }>("/api/logs/get", async (request, reply) => {
-    const { query } = request;
     const userData = await verifyAuthenticatedUser(request.headers, reply);
 
     if (!userData) return;
 
     const { groupID } = userData;
+    const logs = await getSortedLogs(groupID, reply);
 
-    let sessions = await dbQuery(
-      "SELECT sessionStart, sessionEnd, sessionActive, sessionID FROM sessions WHERE groupID = ?",
-      [groupID]
-    );
-    if (!sessions) return reply.code(400).send("There are no sessions to be found");
-
-    let logs = await dbQuery(
-      "SELECT s.groupID, u.fullName, l.distance, l.date, l.logID, l.approved, s.sessionID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE s.groupID = ? ORDER BY l.date DESC",
-      [groupID]
-    );
-
-    let flat: {
-      [key: string]: {
-        sessionID?: string;
-        sessionActive?: string;
-        sessionStart?: string;
-        sessionEnd?: string;
-        logs: Array<any>;
-      };
-    } = {};
-    sessions.map((e) => {
-      if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] };
-
-      flat[e.sessionID] = {
-        sessionID: e.sessionID,
-        sessionActive: e.sessionActive,
-        sessionStart: e.sessionStart,
-        sessionEnd: e.sessionEnd,
-        logs: [],
-      };
-    });
-
-    logs.map((e) => {
-      if (!flat[e.sessionID]) flat[e.sessionID] = { logs: [] };
-
-      flat[e.sessionID] = {
-        ...flat[e.sessionID],
-        logs: [
-          ...flat[e.sessionID].logs,
-          {
-            fullName: e.fullName,
-            distance: e.distance,
-            date: e.date,
-            logID: e.logID,
-            pending: !e.approved,
-          },
-        ],
-      };
-    });
-
-    reply.send(flat);
+    reply.send(logs);
   });
 
   fastify.post<{ Body: { authenticationKey: string; logID: string } }>("/api/logs/delete", async (request, reply) => {
@@ -74,7 +25,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     const results = await dbQuery(
       "SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?",
-      [body["logID"]]
+      [body["logID"]],
     );
 
     if (results[0].userID !== userID) {
@@ -100,7 +51,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     const results = await dbQuery(
       "SELECT u.userID, l.distance, l.logID, s.sessionActive FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON u.userID = l.userID WHERE l.logID = ?",
-      [body["logID"]]
+      [body["logID"]],
     );
 
     if (!results.length) return reply.code(400).send("No log found with that ID");
