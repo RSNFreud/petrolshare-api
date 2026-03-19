@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { dbQuery, dbInsert, generateUniqueURL, sendNotification, verifyAuthenticatedUser } from "../hooks";
+import { dbInsert, generateUniqueURL, sendNotification, verifyAuthenticatedUser } from "../hooks";
+import { getLogs, ResultsDBResponseType } from "../functions/petrol";
 
 export default (fastify: FastifyInstance, _: any, done: () => void) => {
   fastify.post<{
@@ -19,12 +20,9 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
     const { groupID, userID } = userData;
 
-    const results = await dbQuery(
-      "SELECT l.distance, s.sessionActive, s.initialOdometer, s.sessionID, u.fullName, u.notificationKey, u.userID FROM logs l LEFT JOIN sessions s USING (sessionID) LEFT JOIN users u ON l.userID = u.userID WHERE s.groupID=? AND s.sessionActive=1 AND l.approved=1",
-      [groupID]
-    );
+    const results = await getLogs(groupID);
 
-    if (!results || !results.length) return reply.code(400).send("No logs found");
+    if (!results) return reply.code(400).send("No logs found");
 
     let distances: {
       [key: string]: {
@@ -37,33 +35,22 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     } = {};
 
     for (let i = 0; i < results.length; i++) {
-      const e: {
-        distance: string;
-        sessionActive: number;
-        initialOdometer: number;
-        sessionID: number;
-        fullName: string;
-        userID: string;
-      } = results[i];
+      const e = results[i];
 
-      if (!(e.userID in distances)) {
-        distances[e.userID] = { distance: 0, fullName: e["fullName"] };
-      }
       distances[e.userID] = {
-        distance: distances[e.userID].distance + parseFloat(e.distance),
+        distance: (distances[e.userID]?.distance || 0) + parseFloat(e.distance),
         fullName: e["fullName"],
       };
     }
+    const totalDistance = Object.values(distances).reduce((a, b) => a + b["distance"], 0);
 
-    let totalDistance = Object.values(distances).reduce((a, b) => a + b["distance"], 0);
+    const { initialOdometer } = results[0];
+    const { totalPrice, litersFilled, odometer } = body;
 
-    const pricePerLiter = body["totalPrice"] / body["litersFilled"];
-    const totalCarDistance = results[0]["initialOdometer"]
-      ? body["odometer"] - results[0]["initialOdometer"]
-      : totalDistance;
+    const pricePerLiter = totalPrice / litersFilled;
+    const totalCarDistance = initialOdometer ? odometer - initialOdometer : totalDistance;
 
-    const litersPerKm =
-      body["litersFilled"] / (results[0]["initialOdometer"] && totalCarDistance > 0 ? totalCarDistance : totalDistance);
+    const litersPerKm = litersFilled / (initialOdometer && totalCarDistance > 0 ? totalCarDistance : totalDistance);
 
     Object.entries(distances).map(([key, value]) => {
       distances[key] = {
@@ -74,7 +61,8 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
         liters: (value.distance * litersPerKm).toFixed(2),
       };
     });
-    if (results[0]["initialOdometer"] && totalCarDistance !== totalDistance && totalCarDistance - totalDistance > 0) {
+
+    if (initialOdometer && totalCarDistance !== totalDistance && totalCarDistance - totalDistance > 0) {
       distances[0] = {
         fullName: "Unaccounted Distance",
         paymentDue: Math.round((totalCarDistance - totalDistance) * litersPerKm * pricePerLiter * 100) / 100,
@@ -91,33 +79,49 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
       Date.now().toString(),
       groupID,
       true,
-      body["odometer"].toString(),
+      odometer.toString(),
     ]);
 
-    const res: any = await dbInsert(
+    const res = await dbInsert(
       "INSERT INTO invoices (invoiceData, sessionID, totalPrice, totalDistance, userID, litersFilled, pricePerLiter, uniqueURL) VALUES (?,?,?,?,?,?,?,?)",
       [
         JSON.stringify(distances),
         results[0].sessionID,
-        body["totalPrice"],
+        totalPrice,
         Math.round((totalCarDistance > 0 ? totalCarDistance : totalDistance) * 100) / 100,
         userData.userID,
-        body["litersFilled"],
+        litersFilled,
         pricePerLiter,
         await generateUniqueURL(),
-      ]
+      ],
     );
     let notifications = results.filter((e) => e.userID !== userID);
-    notifications = notifications.reduce((map, obj) => {
-      map[obj.userID] = obj;
-      return map;
-    }, {});
 
-    sendNotification(Object.values(notifications), "You have a new invoice waiting!", {
+    const parsedNotifications = notifications.reduce(
+      (map, obj) => {
+        map[obj.userID] = obj;
+        return map;
+      },
+      {} as { [key: string]: ResultsDBResponseType },
+    );
+
+    sendNotification(Object.values(parsedNotifications), "You have a new invoice waiting!", {
       route: "Invoices",
       invoiceID: res["insertId"],
     });
     reply.send(res["insertId"]);
+  });
+
+  fastify.get("/api/petrol/check-validity", async (request, reply) => {
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
+
+    if (!userData) {
+      return reply.code(400).send("Missing required field!");
+    }
+
+    const logs = (await getLogs(userData.groupID))?.length || 0;
+
+    await reply.send(Boolean(logs).toString());
   });
   done();
 };
