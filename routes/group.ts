@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { dbQuery, dbInsert, verifyAuthenticatedUser } from "../hooks";
 import { resetDistance } from "../functions/group/resetDistance";
 import { createGroup } from "../functions/group/createGroup";
+import { checkGroupStatus } from "../functions/user/checkGroupStatus";
 
 export default (fastify: FastifyInstance, _: any, done: () => void) => {
   // Resets the group distance
@@ -26,7 +27,6 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
 
   fastify.post<{
     Body: {
-      authenticationKey: string;
       distance: string;
       petrol: string;
       currency: string;
@@ -46,9 +46,10 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
       body["currency"],
       groupID,
     ]);
+    await resetDistance({ reply, data: userData });
   });
 
-  fastify.get<{ Querystring: { authenticationKey: string } }>("/api/group/get", async (request, reply) => {
+  fastify.get("/api/group/get", async (request, reply) => {
     const userData = await verifyAuthenticatedUser(request.headers, reply);
 
     if (!userData) return;
@@ -59,7 +60,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     reply.send(res[0]);
   });
 
-  fastify.post<{ Body: { authenticationKey: string } }>("/api/group/subscribe", async (request, reply) => {
+  fastify.post("/api/group/subscribe", async (request, reply) => {
     const userData = await verifyAuthenticatedUser(request.headers, reply);
 
     if (!userData) return;
@@ -70,7 +71,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     reply.code(200).send(res?.changedRows);
   });
 
-  fastify.post<{ Body: { authenticationKey: string } }>("/api/group/unsubscribe", async (request, reply) => {
+  fastify.post("/api/group/unsubscribe", async (request, reply) => {
     const userData = await verifyAuthenticatedUser(request.headers, reply);
 
     if (!userData) return;
@@ -81,7 +82,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     reply.code(200).send(res?.changedRows);
   });
 
-  fastify.get<{ Querystring: { authenticationKey: string } }>("/api/group/get-members", async (request, reply) => {
+  fastify.get("/api/group/get-members", async (request, reply) => {
     const userData = await verifyAuthenticatedUser(request.headers, reply);
 
     if (!userData) return;
@@ -92,6 +93,18 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     if (!res) return;
 
     reply.send(res);
+  });
+
+  fastify.post<{ Body: { groupID: string } }>("/api/group/validate-id", async (request, reply) => {
+    const userData = await verifyAuthenticatedUser(request.headers, reply);
+
+    const { body } = request;
+
+    if (!userData || !body?.groupID) {
+      return reply.code(400).send("Missing required field!");
+    }
+
+    return checkGroupStatus({ data: userData, reply, newGroupID: body.groupID });
   });
 
   done();
