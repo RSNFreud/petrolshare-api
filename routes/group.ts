@@ -14,16 +14,15 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
   });
 
   // Create a new group
-  fastify.post<{ Body: { previousGroupID: string } }>("/api/group/create", async ({ headers, body }, reply) => {
-    const user = await verifyAuthenticatedUser(headers, reply);
-    if (!user) return;
+  fastify.post<{ Body: { currency: string; distance: string; petrol: string } }>(
+    "/api/group/create",
+    async ({ headers, body }, reply) => {
+      const user = await verifyAuthenticatedUser(headers, reply);
+      if (!user) return;
 
-    if (!("previousGroupID" in body)) {
-      return reply.code(400).send("Missing required field!");
-    }
-
-    await createGroup({ data: user, reply, previousGroupID: body.previousGroupID });
-  });
+      await createGroup({ data: user, reply, body });
+    },
+  );
 
   fastify.post<{
     Body: {
