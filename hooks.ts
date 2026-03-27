@@ -43,7 +43,7 @@ export async function dbQuery(query: string, parameters?: Array<string | Date | 
   });
 }
 
-export async function dbInsert(query: string, parameters?: Array<string | boolean | undefined | number>) {
+export async function dbInsert(query: string, parameters?: Array<unknown>) {
   return new Promise<OkPacket>((res, rej) => {
     try {
       conn.query(query, parameters, (err, results) => {
@@ -123,7 +123,7 @@ export const generateGroupID = async (): Promise<string> => {
 export const retrieveSessionID = async (groupID: string): Promise<string> => {
   let res: OkPacket | { sessionID: string }[] = await dbQuery(
     "SELECT sessionID FROM sessions WHERE groupID=? AND sessionActive=true",
-    [groupID]
+    [groupID],
   );
   if (!res.length) {
     res = await dbInsert("INSERT INTO sessions (sessionStart, groupID, sessionActive) VALUES (?,?,?)", [
@@ -140,7 +140,7 @@ export const retrieveData = async (authenticationKey: string): Promise<UserDataT
   (
     await dbQuery(
       "SELECT userID, fullName, groupID, active, emailAddress, notificationKey FROM users WHERE authenticationKey=?",
-      [authenticationKey]
+      [authenticationKey],
     )
   )?.[0];
 
@@ -165,7 +165,7 @@ export const checkIfLast = async (groupID: string) => {
 export const sendNotification = async (
   notifKeys: Array<{ notificationKey: string }>,
   message: string,
-  route?: { route: string; invoiceID?: number }
+  route?: { route: string; invoiceID?: number },
 ) => {
   let expo = new Expo({});
 
@@ -246,7 +246,7 @@ export const getName = async (userID: string): Promise<string | null> =>
 
 export const verifyAuthenticatedUser = async (
   headers: FastifyRequest["headers"],
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<UserDataType | null> => {
   const authHeader = headers["authorization"]?.replace("Bearer ", "").trim();
 
@@ -271,7 +271,7 @@ export const getData = async (userData: UserDataType, authenticationKey: string)
 
   const distance = await dbQuery(
     "SELECT l.distance, s.sessionActive from logs l LEFT JOIN sessions s USING (sessionID) WHERE userID=? AND s.sessionActive=1 AND s.groupID=? AND approved=1",
-    [userID, groupID]
+    [userID, groupID],
   );
 
   let total = 0;

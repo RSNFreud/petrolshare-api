@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import { dbQuery, generateCode, verifyAuthenticatedUser, getData } from "../hooks";
+import { dbQuery, generateCode, verifyAuthenticatedUser, getData, dbInsert } from "../hooks";
 import { FastifyInstance } from "fastify";
 import { login } from "../functions/user/login";
 import { register } from "../functions/user/register";
@@ -90,7 +90,7 @@ export default (fastify: FastifyInstance, _: any, done: () => void) => {
     const user = await verifyAuthenticatedUser(headers, reply);
     if (!user) return;
     const code = user.authenticationKey || (await generateCode());
-
+    await dbInsert("UPDATE users SET lastActive=? WHERE userID=?", [new Date(), user.userID]);
     reply.code(200).send(await getData(user, code));
   });
 
